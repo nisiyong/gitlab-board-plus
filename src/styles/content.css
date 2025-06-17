@@ -1,0 +1,278 @@
+/* GitLab Board Plus - 内容样式 */
+
+/* 快速过滤器样式 */
+.gitlab-board-plus-filters {
+  margin: 16px 0;
+}
+
+.board-plus-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.board-plus-filters .filter-btn {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.board-plus-filters .filter-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.board-plus-filters .filter-btn.active {
+  background: #fc6d26;
+  border-color: #fc6d26;
+  color: white;
+}
+
+/* 批量操作样式 */
+.gitlab-board-plus-bulk-actions {
+  margin: 16px 0;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+}
+
+.bulk-actions .bulk-action-btn {
+  background: white;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bulk-actions .bulk-action-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.bulk-actions .bulk-action-btn.btn-danger {
+  background: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.bulk-actions .bulk-action-btn.btn-danger:hover {
+  background: #c82333;
+  border-color: #bd2130;
+}
+
+/* Board 统计信息样式 */
+.gitlab-board-plus-stats {
+  margin: 16px 0;
+}
+
+.board-stats {
+  display: flex;
+  gap: 16px;
+  padding: 12px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.board-stats .stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.board-stats .stat-item strong {
+  color: #495057;
+  font-weight: 600;
+}
+
+.board-stats .stat-item span {
+  color: #fc6d26;
+  font-weight: 700;
+  background: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* 拖拽增强样式 */
+.board-card.dragging {
+  opacity: 0.6;
+  transform: rotate(5deg);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+/* 卡片过滤时的动画 */
+.board-card {
+  transition: all 0.3s ease;
+}
+
+.board-card[style*="display: none"] {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+/* 增强的悬停效果 */
+.board-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* 高优先级卡片的视觉提示 */
+.board-card.high-priority {
+  border-left: 4px solid #dc3545 !important;
+}
+
+.board-card.high-priority::before {
+  content: "🔥";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 12px;
+}
+
+/* 逾期卡片的视觉提示 */
+.board-card.overdue {
+  border-left: 4px solid #ffc107 !important;
+  background: linear-gradient(135deg, #fff3cd 0%, #ffffff 100%) !important;
+}
+
+.board-card.overdue::after {
+  content: "⚠️";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 12px;
+}
+
+/* 分配给当前用户的卡片 */
+.board-card.assigned-to-me {
+  border-left: 4px solid #28a745 !important;
+}
+
+.board-card.assigned-to-me::before {
+  content: "👤";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 12px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .board-plus-filters,
+  .bulk-actions,
+  .board-stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .board-stats .stat-item {
+    justify-content: space-between;
+  }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .gitlab-board-plus-filters .filter-btn {
+    background: #343a40;
+    border-color: #495057;
+    color: #f8f9fa;
+  }
+  
+  .gitlab-board-plus-filters .filter-btn:hover {
+    background: #495057;
+    border-color: #6c757d;
+  }
+  
+  .bulk-actions {
+    background: #343a40;
+    border-color: #495057;
+  }
+  
+  .bulk-actions .bulk-action-btn {
+    background: #495057;
+    border-color: #6c757d;
+    color: #f8f9fa;
+  }
+  
+  .board-stats {
+    background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+    border-color: #495057;
+    color: #f8f9fa;
+  }
+  
+  .board-stats .stat-item span {
+    background: #495057;
+    color: #fc6d26;
+  }
+}
+
+/* 打印样式 */
+@media print {
+  .gitlab-board-plus-filters,
+  .gitlab-board-plus-bulk-actions,
+  .gitlab-board-plus-stats {
+    display: none !important;
+  }
+}
+
+/* 无障碍支持 */
+.filter-btn:focus,
+.bulk-action-btn:focus {
+  outline: 2px solid #fc6d26;
+  outline-offset: 2px;
+}
+
+/* 动画效果 */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gitlab-board-plus-filters,
+.gitlab-board-plus-bulk-actions,
+.gitlab-board-plus-stats {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* 工具提示样式 */
+.gitlab-board-plus-tooltip {
+  position: absolute;
+  background: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.gitlab-board-plus-tooltip.show {
+  opacity: 1;
+} 

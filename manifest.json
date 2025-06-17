@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "GitLab Board Plus",
+  "version": "1.0.0",
+  "description": "增强 GitLab Board 管理功能，提供更好的项目管理体验",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*.gitlab.com/*",
+    "https://*.gitlab.io/*",
+    "http://localhost:*/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.gitlab.com/*",
+        "https://*.gitlab.io/*",
+        "http://localhost:*/*"
+      ],
+      "js": ["src/content.js"],
+      "css": ["src/styles/content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "GitLab Board Plus",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+} 

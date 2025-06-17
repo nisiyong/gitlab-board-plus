@@ -1,0 +1,16 @@
+{
+  "name": "gitlab-board-plus",
+  "version": "1.0.0",
+  "description": "增强 GitLab Board 管理功能的 Chrome 插件",
+  "scripts": {
+    "build": "echo 'Building extension...'",
+    "dev": "echo 'Development mode...'",
+    "package": "zip -r gitlab-board-plus.zip . -x node_modules/\\* .git/\\* *.zip"
+  },
+  "keywords": ["gitlab", "chrome-extension", "project-management", "kanban", "board"],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.254"
+  }
+} 
