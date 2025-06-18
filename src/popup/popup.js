@@ -20,10 +20,80 @@ class PopupManager {
     // 更新界面
     this.updateUI();
     
+    // 检查当前页面是否需要注入脚本
+    await this.checkCurrentPage();
+    
     // 如果已配置，加载数据
     if (this.isConfigured()) {
       this.loadData();
     }
+  }
+
+  // 检查当前页面
+  async checkCurrentPage() {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      if (this.settings.gitlabUrl && tab.url.includes(new URL(this.settings.gitlabUrl).host)) {
+        // 检查是否已有权限
+        const hasPermission = await chrome.permissions.contains({
+          origins: [`${new URL(this.settings.gitlabUrl).protocol}//${new URL(this.settings.gitlabUrl).host}/*`]
+        });
+        
+        if (hasPermission) {
+          // 检查脚本是否已注入
+          const injected = await this.checkScriptInjected(tab.id);
+          if (!injected) {
+            this.showInfo('检测到 GitLab 页面，点击"注入脚本"按钮激活增强功能');
+            this.addInjectButton();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('检查当前页面失败:', error);
+    }
+  }
+
+  // 检查脚本是否已注入
+  async checkScriptInjected(tabId) {
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        func: () => window.gitlabBoardPlusInjected === true
+      });
+      return results[0]?.result || false;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // 添加注入按钮
+  addInjectButton() {
+    if (document.getElementById('injectScriptBtn')) return;
+    
+    const container = document.querySelector('.main-content');
+    const injectBtn = document.createElement('button');
+    injectBtn.id = 'injectScriptBtn';
+    injectBtn.className = 'btn btn-primary';
+    injectBtn.textContent = '注入脚本到当前页面';
+    injectBtn.style.marginTop = '10px';
+    
+    injectBtn.addEventListener('click', async () => {
+      await this.injectContentScript(this.settings.gitlabUrl);
+      injectBtn.remove();
+    });
+    
+    container.appendChild(injectBtn);
+  }
+
+  // 显示信息提示
+  showInfo(message) {
+    const container = document.querySelector('.main-content');
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'alert alert-info';
+    infoDiv.textContent = message;
+    infoDiv.style.marginTop = '10px';
+    container.appendChild(infoDiv);
   }
 
   // 绑定事件
@@ -131,6 +201,13 @@ class PopupManager {
     const cleanUrl = gitlabUrl.replace(/\/$/, '');
 
     try {
+      // 请求动态权限
+      const permissionGranted = await this.requestHostPermission(cleanUrl);
+      if (!permissionGranted) {
+        this.showError('需要访问权限才能正常工作，请点击"允许"');
+        return;
+      }
+
       const response = await this.sendMessage({
         action: 'saveSettings',
         settings: {
@@ -144,7 +221,10 @@ class PopupManager {
         this.settings.accessToken = accessToken;
         this.updateUI();
         this.hideSettings();
-        this.showSuccess('设置保存成功！');
+        this.showSuccess('设置保存成功！正在注入脚本...');
+        
+        // 注入内容脚本到当前标签页
+        await this.injectContentScript(cleanUrl);
         
         // 重新加载数据
         setTimeout(() => {
@@ -156,6 +236,64 @@ class PopupManager {
     } catch (error) {
       console.error('保存设置失败:', error);
       this.showError('保存设置失败: ' + error.message);
+    }
+  }
+
+  // 请求主机权限
+  async requestHostPermission(gitlabUrl) {
+    try {
+      const url = new URL(gitlabUrl);
+      const hostPattern = `${url.protocol}//${url.host}/*`;
+      
+      // 检查是否已有权限
+      const hasPermission = await chrome.permissions.contains({
+        origins: [hostPattern]
+      });
+      
+      if (hasPermission) {
+        return true;
+      }
+      
+      // 请求权限
+      const granted = await chrome.permissions.request({
+        origins: [hostPattern]
+      });
+      
+      return granted;
+    } catch (error) {
+      console.error('请求权限失败:', error);
+      return false;
+    }
+  }
+
+  // 注入内容脚本
+  async injectContentScript(gitlabUrl) {
+    try {
+      // 获取当前活动标签页
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      // 检查是否是 GitLab 页面
+      if (!tab.url.includes(new URL(gitlabUrl).host)) {
+        this.showError('请先打开你的 GitLab 页面，然后重新保存设置');
+        return;
+      }
+      
+      // 注入内容脚本
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['src/content.js']
+      });
+      
+      // 注入样式
+      await chrome.scripting.insertCSS({
+        target: { tabId: tab.id },
+        files: ['src/styles/content.css']
+      });
+      
+      this.showSuccess('脚本注入成功！请刷新页面查看效果');
+    } catch (error) {
+      console.error('注入脚本失败:', error);
+      this.showError('脚本注入失败: ' + error.message);
     }
   }
 
@@ -173,6 +311,13 @@ class PopupManager {
     statusElement.innerHTML = '<div class="testing">正在测试连接...</div>';
 
     try {
+      // 先请求权限
+      const permissionGranted = await this.requestHostPermission(gitlabUrl);
+      if (!permissionGranted) {
+        statusElement.innerHTML = '<div class="error">❌ 需要访问权限</div>';
+        return;
+      }
+
       // 临时保存设置用于测试
       const response = await this.sendMessage({
         action: 'saveSettings',

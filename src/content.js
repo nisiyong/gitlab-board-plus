@@ -5,6 +5,10 @@ class GitLabBoardEnhancer {
   constructor() {
     this.currentUrl = window.location.href;
     this.projectId = this.extractProjectId();
+    
+    // 标记脚本已注入
+    window.gitlabBoardPlusInjected = true;
+    
     this.init();
   }
 

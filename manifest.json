@@ -13,6 +13,13 @@
     "https://*.gitlab.io/*",
     "http://localhost:*/*"
   ],
+  "optional_permissions": [
+    "tabs"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
   "background": {
     "service_worker": "src/background.js",
     "type": "module"

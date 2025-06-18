@@ -1,6 +1,76 @@
 // GitLab Board Plus - 后台脚本
 // 处理 GitLab API 调用和数据缓存
 
+// 配置管理器类
+class ConfigManager {
+  constructor() {
+    this.supportedDomains = [
+      'gitlab.com',
+      'gitlab.io'
+    ];
+  }
+
+  // 生成权限模式
+  generatePermissionPattern(gitlabUrl) {
+    try {
+      const url = new URL(gitlabUrl);
+      return `${url.protocol}//${url.host}/*`;
+    } catch (error) {
+      throw new Error('无效的 GitLab URL');
+    }
+  }
+
+  // 请求权限
+  async requestPermission(gitlabUrl) {
+    try {
+      const pattern = this.generatePermissionPattern(gitlabUrl);
+      
+      // 检查是否已有权限
+      const hasPermission = await chrome.permissions.contains({
+        origins: [pattern]
+      });
+      
+      if (hasPermission) {
+        return { success: true, message: '权限已存在' };
+      }
+      
+      // 请求新权限
+      const granted = await chrome.permissions.request({
+        origins: [pattern]
+      });
+      
+      if (granted) {
+        return { success: true, message: '权限授予成功' };
+      } else {
+        return { success: false, message: '用户拒绝授予权限' };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  // 验证 GitLab URL 格式
+  validateGitLabUrl(url) {
+    try {
+      const parsedUrl = new URL(url);
+      
+      // 检查协议
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        return { valid: false, message: '仅支持 HTTP 和 HTTPS 协议' };
+      }
+      
+      // 检查主机名
+      if (!parsedUrl.hostname) {
+        return { valid: false, message: '无效的主机名' };
+      }
+      
+      return { valid: true, message: 'URL 格式正确' };
+    } catch (error) {
+      return { valid: false, message: '无效的 URL 格式' };
+    }
+  }
+}
+
 class GitLabAPI {
   constructor() {
     this.baseUrl = '';
@@ -152,8 +222,9 @@ class GitLabAPI {
   }
 }
 
-// 初始化 API 实例
+// 初始化实例
 const gitlabAPI = new GitLabAPI();
+const configManager = new ConfigManager();
 
 // 插件安装时初始化
 chrome.runtime.onInstalled.addListener(async () => {
