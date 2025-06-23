@@ -270,28 +270,37 @@ class GitLabBoardEnhancer {
       const searchSection = newStructure.querySelector('.gitlab-board-plus-search-section');
       const boardsSection = newStructure.querySelector('.gitlab-board-plus-boards-section');
       
-      // 移动搜索区域
-      if (originalFilteredSearch && searchSection) {
-        searchSection.appendChild(originalFilteredSearch);
-        console.log('✅ Moved filtered search to search section');
+      // 创建 issues-details-filters 容器并将搜索相关元素放入其中
+      if (originalIssuesFilters && searchSection) {
+        // 创建 issues-details-filters 容器
+        const issuesDetailsFilters = document.createElement('div');
+        issuesDetailsFilters.className = 'issues-details-filters';
+        
+        // 查找 vue-filtered-search-bar-container 元素
+        const vueFilteredSearchContainer = originalIssuesFilters.querySelector('.vue-filtered-search-bar-container');
+        const filterDropdownContainer = originalIssuesFilters.querySelector('.filter-dropdown-container');
+        
+        // 将 vue-filtered-search-bar-container 移动到 issues-details-filters 中
+        if (vueFilteredSearchContainer) {
+          issuesDetailsFilters.appendChild(vueFilteredSearchContainer);
+          console.log('✅ Moved vue-filtered-search-bar-container to issues-details-filters');
+        }
+        
+        // 将 filter-dropdown-container 也移动到 issues-details-filters 中
+        if (filterDropdownContainer) {
+          issuesDetailsFilters.appendChild(filterDropdownContainer);
+          console.log('✅ Moved filter-dropdown-container to issues-details-filters');
+        }
+        
+        // 将 issues-details-filters 容器添加到搜索区域
+        searchSection.appendChild(issuesDetailsFilters);
+        console.log('✅ Created and populated issues-details-filters container');
       }
       
       // 移动 boards 列表
       if (originalBoardsList && boardsSection) {
         boardsSection.appendChild(originalBoardsList);
         console.log('✅ Moved boards list to boards section');
-      }
-      
-      // 如果原有的 issues-filters 还有其他内容，也保留
-      if (originalIssuesFilters) {
-        const remainingElements = Array.from(originalIssuesFilters.children);
-        remainingElements.forEach(element => {
-          // 跳过已经移动的元素
-          if (!element.querySelector('[data-testid="issue-board-filtered-search"]') &&
-              !element.hasAttribute('data-qa-selector')) {
-            searchSection.appendChild(element);
-          }
-        });
       }
       
     } catch (error) {
@@ -344,71 +353,36 @@ class GitLabBoardEnhancer {
     
     container.innerHTML = `
       <div class="left-panel-header">
-        <h3 class="panel-title">过滤条件</h3>
+        <h3 class="panel-title">条件模版</h3>
         <button class="panel-toggle-btn" aria-label="收起/展开">
           <span class="toggle-icon">⏷</span>
         </button>
       </div>
       <div class="left-panel-content">
-        <div class="filter-section">
-          <div class="filter-section-header" data-section="assignees">
-            <span class="section-icon">👤</span>
-            <span class="section-title">指派人</span>
-            <span class="section-count" id="assignees-count">0</span>
-            <span class="section-toggle">⏷</span>
+        <div class="filter-templates">
+          <div class="filter-template-item active" data-template="default">
+            <span class="template-icon">📋</span>
+            <span class="template-name">默认</span>
           </div>
-          <div class="filter-items" id="assignees-list">
-            <div class="loading-placeholder">加载中...</div>
+          
+          <div class="filter-template-item" data-template="assigned-to-me">
+            <span class="template-icon">👤</span>
+            <span class="template-name">指派给我</span>
           </div>
-        </div>
-        
-        <div class="filter-section">
-          <div class="filter-section-header" data-section="authors">
-            <span class="section-icon">✍️</span>
-            <span class="section-title">创建者</span>
-            <span class="section-count" id="authors-count">0</span>
-            <span class="section-toggle">⏷</span>
+          
+          <div class="filter-template-item" data-template="created-by-me">
+            <span class="template-icon">✍️</span>
+            <span class="template-name">我创建的</span>
           </div>
-          <div class="filter-items" id="authors-list">
-            <div class="loading-placeholder">加载中...</div>
-          </div>
-        </div>
-        
-        <div class="filter-section">
-          <div class="filter-section-header" data-section="milestones">
-            <span class="section-icon">🎯</span>
-            <span class="section-title">里程碑</span>
-            <span class="section-count" id="milestones-count">0</span>
-            <span class="section-toggle">⏷</span>
-          </div>
-          <div class="filter-items" id="milestones-list">
-            <div class="loading-placeholder">加载中...</div>
-          </div>
-        </div>
-        
-        <div class="filter-section">
-          <div class="filter-section-header" data-section="labels">
-            <span class="section-icon">🏷️</span>
-            <span class="section-title">标签</span>
-            <span class="section-count" id="labels-count">0</span>
-            <span class="section-toggle">⏷</span>
-          </div>
-          <div class="filter-items" id="labels-list">
-            <div class="loading-placeholder">加载中...</div>
-          </div>
-        </div>
-        
-        <div class="filter-actions">
-          <button class="clear-all-btn">清除所有过滤</button>
         </div>
       </div>
     `;
-
-    // 加载过滤数据
-    this.loadFilterData();
     
     // 绑定事件
     this.bindLeftPanelEvents(container);
+    
+    // 根据当前URL参数设置活跃模版
+    this.setActiveTemplateFromUrl(container);
     
     // 返回容器元素（用于新的调用方式）
     return container;
@@ -423,11 +397,7 @@ class GitLabBoardEnhancer {
     this.enhanceDragAndDrop();
   }
 
-  // 加载过滤数据
-  loadFilterData() {
-    // 重用之前的 loadAttributeData 方法
-    this.loadAttributeData();
-  }
+
 
   // 绑定左侧面板事件
   bindLeftPanelEvents(container) {
@@ -444,44 +414,404 @@ class GitLabBoardEnhancer {
       });
     }
 
-    // 过滤分组收起/展开
-    const sectionHeaders = container.querySelectorAll('.filter-section-header');
-    sectionHeaders.forEach(header => {
-      header.addEventListener('click', () => {
-        const section = header.parentElement;
-        const items = section.querySelector('.filter-items');
-        const toggle = header.querySelector('.section-toggle');
+    // 模版选择事件
+    const templateItems = container.querySelectorAll('.filter-template-item');
+    templateItems.forEach(item => {
+      item.addEventListener('click', () => {
+        // 移除所有活跃状态
+        templateItems.forEach(t => t.classList.remove('active'));
+        // 设置当前项为活跃
+        item.classList.add('active');
         
-        if (items && toggle) {
-          const isCollapsed = items.classList.toggle('collapsed');
-          toggle.textContent = isCollapsed ? '⏵' : '⏷';
-        }
+        // 获取模版类型并应用过滤
+        const templateType = item.getAttribute('data-template');
+        this.applyFilterTemplate(templateType);
       });
     });
 
-    // 清除所有过滤
-    const clearAllBtn = container.querySelector('.clear-all-btn');
-    if (clearAllBtn) {
-      clearAllBtn.addEventListener('click', () => {
-        this.clearAllFilters();
-      });
+
+  }
+
+  // 应用过滤模版
+  applyFilterTemplate(templateType) {
+    console.log(`🔍 Applying filter template: ${templateType}`);
+    
+    // 使用URL参数的方式来应用过滤
+    this.applyFilterViaUrl(templateType);
+  }
+
+  // 通过URL参数应用过滤
+  applyFilterViaUrl(templateType) {
+    try {
+      const currentUrl = new URL(window.location.href);
+      
+      // 清除现有的过滤参数
+      this.clearFilterParams(currentUrl);
+      
+      // 根据模版类型添加相应的URL参数
+      switch (templateType) {
+        case 'default':
+          // 默认情况下不添加任何参数，已经在clearFilterParams中清除了
+          break;
+        case 'assigned-to-me':
+          // 获取当前用户信息
+          const currentUser = this.getCurrentUser();
+          if (currentUser) {
+            currentUrl.searchParams.set('assignee_username', currentUser);
+          } else {
+            // 如果无法获取用户名，使用GitLab的特殊参数
+            currentUrl.searchParams.set('assignee_id', 'me');
+          }
+          break;
+        case 'created-by-me':
+          // 获取当前用户信息
+          const currentAuthor = this.getCurrentUser();
+          if (currentAuthor) {
+            currentUrl.searchParams.set('author_username', currentAuthor);
+          } else {
+            // 如果无法获取用户名，使用GitLab的特殊参数
+            currentUrl.searchParams.set('author_id', 'me');
+          }
+          break;
+      }
+      
+      console.log(`🔄 Navigating to: ${currentUrl.toString()}`);
+      
+      // 直接导航到新的URL
+      window.location.href = currentUrl.toString();
+      
+    } catch (error) {
+      console.error('❌ Error applying filter via URL:', error);
+      // 如果URL方式失败，回退到搜索框方式
+      this.fallbackToSearchInput(templateType);
+    }
+  }
+
+  // 清除过滤相关的URL参数
+  clearFilterParams(url) {
+    // GitLab boards 页面常用的过滤参数
+    const filterParams = [
+      'assignee_username',
+      'assignee_id', 
+      'author_username',
+      'author_id',
+      'milestone_title',
+      'label_name',
+      'search',
+      'state',
+      'scope',
+      'sort'
+    ];
+    
+    filterParams.forEach(param => {
+      url.searchParams.delete(param);
+    });
+  }
+
+  // 根据模版类型获取描述
+  getFilterDescriptionByType(templateType) {
+    switch (templateType) {
+      case 'default':
+        return '';
+      case 'assigned-to-me':
+        return '指派给我的问题';
+      case 'created-by-me':
+        return '我创建的问题';
+      default:
+        return templateType;
+    }
+  }
+
+  // 回退到搜索框方式（如果URL方式失败）
+  fallbackToSearchInput(templateType) {
+    console.log('🔄 Falling back to search input method');
+    
+    const searchInput = this.getSearchInput();
+    if (!searchInput) {
+      console.warn('❌ Search input not found for fallback');
+      return;
     }
 
-    // 重用之前的过滤事件绑定逻辑
-    this.bindAttributeListEvents(container);
+    let filterQuery = '';
+    
+    switch (templateType) {
+      case 'default':
+        filterQuery = '';
+        break;
+      case 'assigned-to-me':
+        const currentUser = this.getCurrentUser();
+        if (currentUser) {
+          filterQuery = `assignee:@${currentUser}`;
+        } else {
+          filterQuery = 'assignee:@me';
+        }
+        break;
+      case 'created-by-me':
+        const currentAuthor = this.getCurrentUser();
+        if (currentAuthor) {
+          filterQuery = `author:@${currentAuthor}`;
+        } else {
+          filterQuery = 'author:@me';
+        }
+        break;
+    }
+    
+    this.applySearchFilter(searchInput, filterQuery);
   }
 
-  // 清除所有过滤
-  clearAllFilters() {
-    // 清除所有激活的过滤项
-    const activeItems = document.querySelectorAll('.filter-items .filter-item.active');
-    activeItems.forEach(item => {
-      item.classList.remove('active');
-    });
-
-    // 重新应用过滤（实际上是清除过滤）
-    this.reapplyAllFilters();
+  // 根据当前URL参数设置活跃模版
+  setActiveTemplateFromUrl(container) {
+    try {
+      const currentUrl = new URL(window.location.href);
+      let activeTemplate = 'default';
+      
+      // 检查URL参数来确定当前活跃的模版
+      if (currentUrl.searchParams.has('assignee_username') || 
+          currentUrl.searchParams.has('assignee_id')) {
+        activeTemplate = 'assigned-to-me';
+      } else if (currentUrl.searchParams.has('author_username') || 
+                 currentUrl.searchParams.has('author_id')) {
+        activeTemplate = 'created-by-me';
+      }
+      
+      // 更新UI中的活跃状态
+      const templateItems = container.querySelectorAll('.filter-template-item');
+      templateItems.forEach(item => {
+        const templateType = item.getAttribute('data-template');
+        if (templateType === activeTemplate) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+      
+      console.log(`📍 Set active template from URL: ${activeTemplate}`);
+      
+    } catch (error) {
+      console.warn('❌ Error setting active template from URL:', error);
+      // 如果出错，默认选中第一个模版
+      const firstTemplate = container.querySelector('.filter-template-item');
+      if (firstTemplate) {
+        firstTemplate.classList.add('active');
+      }
+    }
   }
+
+  // 清除过滤模版
+  clearFilterTemplate() {
+    console.log('🧹 Clearing filter template');
+    
+    // 重置为默认模版
+    const defaultTemplate = document.querySelector('.filter-template-item[data-template="default"]');
+    if (defaultTemplate) {
+      // 移除所有活跃状态
+      document.querySelectorAll('.filter-template-item').forEach(t => t.classList.remove('active'));
+      // 设置默认为活跃
+      defaultTemplate.classList.add('active');
+      
+      // 应用默认过滤（清空所有过滤参数）
+      this.applyFilterTemplate('default');
+    }
+  }
+
+  // 获取搜索输入框
+  getSearchInput() {
+    // 尝试多种选择器来找到搜索输入框
+    const selectors = [
+      '[data-testid="issue-board-filtered-search"] input',
+      '.filtered-search-input-container input',
+      '.filtered-search input',
+      '.gl-filtered-search-input',
+      'input[placeholder*="Search"]',
+      'input[placeholder*="Filter"]'
+    ];
+    
+    for (const selector of selectors) {
+      const input = document.querySelector(selector);
+      if (input) {
+        console.log(`✅ Found search input with selector: ${selector}`);
+        return input;
+      }
+    }
+    
+    console.warn('❌ Search input not found');
+    return null;
+  }
+
+  // 获取当前用户
+  getCurrentUser() {
+    try {
+      // 尝试从多个地方获取当前用户信息
+      
+      // 方法1: 从页面的 gon 对象获取（GitLab 的全局对象）
+      if (window.gon && window.gon.current_username) {
+        console.log(`✅ Found current user from gon: ${window.gon.current_username}`);
+        return window.gon.current_username;
+      }
+      
+      // 方法2: 从用户菜单获取
+      const userMenu = document.querySelector('[data-qa-selector="user_menu"]') ||
+                      document.querySelector('.header-user-dropdown-toggle') ||
+                      document.querySelector('.user-menu') ||
+                      document.querySelector('.navbar-nav .dropdown');
+      
+      if (userMenu) {
+        // 尝试从用户头像的alt属性获取
+        const userImg = userMenu.querySelector('img');
+        if (userImg && userImg.alt) {
+          console.log(`✅ Found current user from avatar alt: ${userImg.alt}`);
+          return userImg.alt;
+        }
+        
+        // 尝试从用户头像的data属性获取
+        if (userImg && userImg.dataset.user) {
+          console.log(`✅ Found current user from avatar data: ${userImg.dataset.user}`);
+          return userImg.dataset.user;
+        }
+        
+        // 尝试从链接href获取用户名
+        const userLink = userMenu.querySelector('a[href*="/"]');
+        if (userLink) {
+          const href = userLink.getAttribute('href');
+          const userMatch = href.match(/\/([^\/]+)$/);
+          if (userMatch && userMatch[1] && !userMatch[1].includes('.')) {
+            console.log(`✅ Found current user from link: ${userMatch[1]}`);
+            return userMatch[1];
+          }
+        }
+      }
+      
+      // 方法3: 从页面的 data 属性获取
+      const bodyData = document.body.dataset;
+      if (bodyData.user || bodyData.username) {
+        const username = bodyData.user || bodyData.username;
+        console.log(`✅ Found current user from body data: ${username}`);
+        return username;
+      }
+      
+      // 方法4: 从 meta 标签获取
+      const userMeta = document.querySelector('meta[name="user-login"]') ||
+                      document.querySelector('meta[name="current-user"]') ||
+                      document.querySelector('meta[name="current-user-id"]');
+      if (userMeta) {
+        const username = userMeta.getAttribute('content');
+        console.log(`✅ Found current user from meta: ${username}`);
+        return username;
+      }
+      
+      // 方法5: 从当前URL路径尝试提取（如果在用户profile页面）
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/users/')) {
+        const userMatch = currentPath.match(/\/users\/([^\/]+)/);
+        if (userMatch && userMatch[1]) {
+          console.log(`✅ Found current user from URL path: ${userMatch[1]}`);
+          return userMatch[1];
+        }
+      }
+      
+      console.warn('❌ Could not determine current user from any source');
+      return null;
+    } catch (error) {
+      console.error('❌ Error getting current user:', error);
+      return null;
+    }
+  }
+
+  // 应用搜索过滤
+  applySearchFilter(searchInput, filterQuery) {
+    try {
+      console.log(`🔍 Applying search filter: "${filterQuery}"`);
+      
+      // 清空当前搜索内容
+      searchInput.value = '';
+      
+      // 触发 input 事件清空之前的搜索
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      
+      // 如果有过滤查询，应用它
+      if (filterQuery) {
+        // 延迟一点时间确保清空操作完成
+        setTimeout(() => {
+          // 设置新的搜索值
+          searchInput.value = filterQuery;
+          
+          // 触发多种事件来确保搜索生效
+          searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+          searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+          
+          // 模拟按 Enter 键提交搜索
+          setTimeout(() => {
+            searchInput.dispatchEvent(new KeyboardEvent('keydown', { 
+              key: 'Enter', 
+              keyCode: 13, 
+              bubbles: true 
+            }));
+            searchInput.dispatchEvent(new KeyboardEvent('keyup', { 
+              key: 'Enter', 
+              keyCode: 13, 
+              bubbles: true 
+            }));
+          }, 100);
+        }, 200);
+      }
+      
+      // 显示用户反馈
+      this.showFilterFeedback(filterQuery);
+      
+      console.log(`✅ Search filter applied successfully`);
+    } catch (error) {
+      console.error('❌ Error applying search filter:', error);
+    }
+  }
+
+  // 显示过滤反馈
+  showFilterFeedback(filterQuery) {
+    // 查找或创建反馈元素
+    let feedback = document.querySelector('.filter-feedback');
+    if (!feedback) {
+      feedback = document.createElement('div');
+      feedback.className = 'filter-feedback';
+      
+      // 将反馈插入到搜索区域
+      const searchSection = document.querySelector('.gitlab-board-plus-search-section');
+      if (searchSection) {
+        searchSection.appendChild(feedback);
+      }
+    }
+    
+    // 设置反馈内容
+    if (filterQuery) {
+      feedback.innerHTML = `
+        <span class="feedback-icon">🔍</span>
+        <span class="feedback-text">已应用过滤: <strong>${filterQuery}</strong></span>
+        <button class="feedback-close" onclick="this.parentElement.style.display='none'">×</button>
+      `;
+      feedback.style.display = 'flex';
+      
+      // 3秒后自动隐藏
+      setTimeout(() => {
+        if (feedback) {
+          feedback.style.display = 'none';
+        }
+      }, 3000);
+    } else {
+      feedback.innerHTML = `
+        <span class="feedback-icon">✨</span>
+        <span class="feedback-text">已清除所有过滤条件</span>
+        <button class="feedback-close" onclick="this.parentElement.style.display='none'">×</button>
+      `;
+      feedback.style.display = 'flex';
+      
+      // 2秒后自动隐藏
+      setTimeout(() => {
+        if (feedback) {
+          feedback.style.display = 'none';
+        }
+      }, 2000);
+    }
+  }
+
+
 
   async createBoardTabs(container, currentBoardId, boardsDropdown) {
     // 检查是否已经有 tabs，如果有则不再修改
@@ -1136,229 +1466,7 @@ class GitLabBoardEnhancer {
 
 
 
-  escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
 
-  loadAttributeData() {
-    // 从当前页面的 issues 中提取属性数据
-    const cards = document.querySelectorAll('.board-card');
-    const assignees = new Map();
-    const authors = new Map();
-    const milestones = new Map();
-    const labels = new Map();
-
-    cards.forEach(card => {
-      // 提取指派人
-      const assigneeImg = card.querySelector('.board-card-assignee img');
-      if (assigneeImg) {
-        const assigneeName = assigneeImg.alt || 'Unknown';
-        const assigneeAvatar = assigneeImg.src;
-        assignees.set(assigneeName, {
-          name: assigneeName,
-          avatar: assigneeAvatar,
-          count: (assignees.get(assigneeName)?.count || 0) + 1
-        });
-      }
-
-      // 提取标签
-      const labelElements = card.querySelectorAll('.gl-label');
-      labelElements.forEach(labelEl => {
-        const labelText = labelEl.querySelector('.gl-label-text')?.textContent?.trim();
-        const labelColor = labelEl.style.getPropertyValue('--label-background-color');
-        if (labelText) {
-          labels.set(labelText, {
-            name: labelText,
-            color: labelColor,
-            count: (labels.get(labelText)?.count || 0) + 1
-          });
-        }
-      });
-
-      // 提取里程碑（如果有的话）
-      const milestoneEl = card.querySelector('[data-testid="milestone"]');
-      if (milestoneEl) {
-        const milestoneName = milestoneEl.textContent.trim();
-        milestones.set(milestoneName, {
-          name: milestoneName,
-          count: (milestones.get(milestoneName)?.count || 0) + 1
-        });
-      }
-    });
-
-    // 渲染属性列表
-    this.renderAttributeItems('assignees-list', assignees, 'assignee');
-    this.renderAttributeItems('authors-list', authors, 'author');
-    this.renderAttributeItems('milestones-list', milestones, 'milestone');
-    this.renderAttributeItems('labels-list', labels, 'label');
-
-    // 更新计数
-    this.updateAttributeCounts(assignees.size, authors.size, milestones.size, labels.size);
-  }
-
-  renderAttributeItems(containerId, itemsMap, type) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    container.innerHTML = '';
-    
-    // 按计数排序
-    const sortedItems = Array.from(itemsMap.values()).sort((a, b) => b.count - a.count);
-    
-    sortedItems.forEach(item => {
-      const itemEl = document.createElement('div');
-      itemEl.className = 'filter-item';
-      itemEl.setAttribute('data-type', type);
-      itemEl.setAttribute('data-value', item.name);
-      
-      let itemContent = '';
-      
-      switch (type) {
-        case 'assignee':
-        case 'author':
-          itemContent = `
-            <img class="attribute-avatar" src="${item.avatar}" alt="${item.name}">
-            <span class="attribute-name">${this.escapeHtml(item.name)}</span>
-            <span class="attribute-count">${item.count}</span>
-          `;
-          break;
-        case 'label':
-          itemContent = `
-            <span class="attribute-label-color" style="background-color: ${item.color}"></span>
-            <span class="attribute-name">${this.escapeHtml(item.name)}</span>
-            <span class="attribute-count">${item.count}</span>
-          `;
-          break;
-        default:
-          itemContent = `
-            <span class="attribute-name">${this.escapeHtml(item.name)}</span>
-            <span class="attribute-count">${item.count}</span>
-          `;
-      }
-      
-      itemEl.innerHTML = itemContent;
-      container.appendChild(itemEl);
-    });
-  }
-
-  updateAttributeCounts(assigneeCount, authorCount, milestoneCount, labelCount) {
-    const assigneesCount = document.getElementById('assignees-count');
-    const authorsCount = document.getElementById('authors-count');
-    const milestonesCount = document.getElementById('milestones-count');
-    const labelsCount = document.getElementById('labels-count');
-    
-    if (assigneesCount) assigneesCount.textContent = assigneeCount;
-    if (authorsCount) authorsCount.textContent = authorCount;
-    if (milestonesCount) milestonesCount.textContent = milestoneCount;
-    if (labelsCount) labelsCount.textContent = labelCount;
-  }
-
-  bindAttributeListEvents(container) {
-    // 属性项点击事件
-    container.addEventListener('click', (e) => {
-      const filterItem = e.target.closest('.filter-item');
-      if (filterItem) {
-        this.toggleAttributeFilter(filterItem);
-      }
-    });
-  }
-
-  toggleAttributeFilter(filterItem) {
-    const isActive = filterItem.classList.contains('active');
-    const type = filterItem.getAttribute('data-type');
-    const value = filterItem.getAttribute('data-value');
-    
-    if (isActive) {
-      // 取消过滤
-      filterItem.classList.remove('active');
-      this.clearAttributeFilter(type, value);
-    } else {
-      // 应用过滤
-      filterItem.classList.add('active');
-      this.applyAttributeFilter(type, value);
-    }
-  }
-
-  applyAttributeFilter(type, value) {
-    const cards = document.querySelectorAll('.board-card');
-    
-    cards.forEach(card => {
-      let matches = false;
-      
-      switch (type) {
-        case 'assignee':
-          const assigneeImg = card.querySelector('.board-card-assignee img');
-          matches = assigneeImg && assigneeImg.alt === value;
-          break;
-        case 'label':
-          const labels = card.querySelectorAll('.gl-label .gl-label-text');
-          matches = Array.from(labels).some(label => label.textContent.trim() === value);
-          break;
-        case 'milestone':
-          const milestoneEl = card.querySelector('[data-testid="milestone"]');
-          matches = milestoneEl && milestoneEl.textContent.trim() === value;
-          break;
-      }
-      
-      if (!matches) {
-        card.style.display = 'none';
-      }
-    });
-  }
-
-  clearAttributeFilter(type, value) {
-    // 检查是否还有其他活跃的过滤器
-    const activeFilters = document.querySelectorAll('.filter-item.active');
-    
-    if (activeFilters.length === 0) {
-      // 如果没有活跃过滤器，显示所有卡片
-      const cards = document.querySelectorAll('.board-card');
-      cards.forEach(card => {
-        card.style.display = 'block';
-      });
-    } else {
-      // 重新应用所有活跃的过滤器
-      this.reapplyAllFilters();
-    }
-  }
-
-  reapplyAllFilters() {
-    const cards = document.querySelectorAll('.board-card');
-    const activeFilters = document.querySelectorAll('.filter-item.active');
-    
-    cards.forEach(card => {
-      let shouldShow = true;
-      
-      activeFilters.forEach(filter => {
-        const type = filter.getAttribute('data-type');
-        const value = filter.getAttribute('data-value');
-        
-        let matches = false;
-        switch (type) {
-          case 'assignee':
-            const assigneeImg = card.querySelector('.board-card-assignee img');
-            matches = assigneeImg && assigneeImg.alt === value;
-            break;
-          case 'label':
-            const labels = card.querySelectorAll('.gl-label .gl-label-text');
-            matches = Array.from(labels).some(label => label.textContent.trim() === value);
-            break;
-          case 'milestone':
-            const milestoneEl = card.querySelector('[data-testid="milestone"]');
-            matches = milestoneEl && milestoneEl.textContent.trim() === value;
-            break;
-        }
-        
-        if (!matches) {
-          shouldShow = false;
-        }
-      });
-      
-      card.style.display = shouldShow ? 'block' : 'none';
-    });
-  }
 
   // 获取当前 Board ID
   getCurrentBoardId() {

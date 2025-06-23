@@ -108,8 +108,8 @@
 
 /* 左侧过滤面板 */
 .gitlab-board-plus-left-panel {
-  width: 280px;
-  min-width: 280px;
+  width: 220px;
+  min-width: 220px;
   background: #fafbfc;
   border-right: 1px solid #e5e7eb;
   display: flex;
@@ -119,12 +119,12 @@
 }
 
 .gitlab-board-plus-left-panel.collapsed {
-  width: 48px;
-  min-width: 48px;
+  width: 40px;
+  min-width: 40px;
 }
 
 .left-panel-header {
-  padding: 16px;
+  padding: 10px 12px;
   border-bottom: 1px solid #e5e7eb;
   background: #fff;
   display: flex;
@@ -134,7 +134,7 @@
 }
 
 .panel-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #374151;
   margin: 0;
@@ -146,19 +146,36 @@
   padding: 4px;
   cursor: pointer;
   color: #6b7280;
-  font-size: 16px;
+  font-size: 12px;
   transition: all 0.2s ease;
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .panel-toggle-btn:hover {
   background: #f3f4f6;
-  border-radius: 4px;
+  color: #374151;
+}
+
+.toggle-icon {
+  font-size: 12px;
+  font-weight: bold;
+  transform: rotate(0deg);
+  transition: transform 0.2s ease;
+}
+
+.gitlab-board-plus-left-panel.collapsed .toggle-icon {
+  transform: rotate(-90deg);
 }
 
 .left-panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 12px;
   transition: opacity 0.3s ease;
 }
 
@@ -171,165 +188,70 @@
   opacity: 0;
 }
 
-/* 过滤器分组 */
-.filter-section {
-  margin-bottom: 16px;
+/* 过滤模版 */
+.filter-templates {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-template-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  overflow: hidden;
-}
-
-.filter-section:last-child {
-  margin-bottom: 0;
-}
-
-.filter-section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e5e7eb;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
 }
 
-.filter-section-header:hover {
-  background: #e9ecef;
+.filter-template-item:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-.section-icon {
+.filter-template-item.active {
+  border-color: #1f75cb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px #1f75cb;
+}
+
+.filter-template-item.active::before {
+  content: "✓";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  color: #1f75cb;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.template-icon {
   font-size: 16px;
   line-height: 1;
-}
-
-.section-title {
-  flex: 1;
-  font-weight: 500;
-  color: #374151;
-}
-
-.section-count {
-  background: #e9ecef;
-  color: #6c757d;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.section-toggle {
-  color: #6b7280;
-  transition: transform 0.2s ease;
-}
-
-.filter-items {
-  max-height: 200px;
-  overflow-y: auto;
-  transition: max-height 0.3s ease;
-}
-
-.filter-items.collapsed {
-  max-height: 0;
-  overflow: hidden;
-}
-
-.filter-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.filter-item:hover {
-  background: #f8f9fa;
-}
-
-.filter-item.active {
-  background: #e3f2fd;
-  color: #1976d2;
-  font-weight: 500;
-}
-
-.loading-placeholder {
-  padding: 16px;
-  text-align: center;
-  color: #6b7280;
-  font-style: italic;
-}
-
-/* 过滤器项的子元素样式 */
-.attribute-avatar {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  object-fit: cover;
   flex-shrink: 0;
 }
 
-.attribute-label-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
-}
-
-.attribute-name {
-  flex: 1;
+.template-name {
   font-size: 13px;
+  font-weight: 500;
   color: #374151;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+  flex: 1;
 }
 
-.filter-item.active .attribute-name {
-  color: #1976d2;
-  font-weight: 500;
+.filter-template-item.active .template-name {
+  color: #1f75cb;
+  font-weight: 600;
 }
 
-.attribute-count {
-  background: #f3f4f6;
-  color: #6b7280;
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 500;
-  flex-shrink: 0;
-}
 
-.filter-item.active .attribute-count {
-  background: #e3f2fd;
-  color: #1976d2;
-}
 
-/* 过滤器操作 */
-.filter-actions {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.clear-all-btn {
-  width: 100%;
-  padding: 8px 16px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  color: #495057;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.clear-all-btn:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
-}
 
 /* 右侧内容区域 */
 .gitlab-board-plus-right-panel {
@@ -348,6 +270,26 @@
   flex-shrink: 0;
 }
 
+/* issues-details-filters 容器 - 一行布局 */
+.gitlab-board-plus-search-section .issues-details-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 搜索栏容器自适应宽度 */
+.gitlab-board-plus-search-section .vue-filtered-search-bar-container {
+  flex: 1;
+  min-width: 0;
+}
+
+/* filter-dropdown-container 保持在右侧，不换行 */
+.gitlab-board-plus-search-section .filter-dropdown-container {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .search-placeholder {
   padding: 12px;
   background: #f8f9fa;
@@ -356,6 +298,72 @@
   text-align: center;
   color: #6c757d;
   font-style: italic;
+}
+
+/* 过滤反馈 */
+.filter-feedback {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #0c4a6e;
+  animation: slideDown 0.3s ease-out;
+}
+
+.filter-feedback.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+
+
+.feedback-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.feedback-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.feedback-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.feedback-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #374151;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Boards 区域 */
@@ -472,8 +480,8 @@
 /* 响应式设计 */
 @media (max-width: 1024px) {
   .gitlab-board-plus-left-panel {
-    width: 240px;
-    min-width: 240px;
+    width: 200px;
+    min-width: 200px;
   }
   
   .gitlab-board-plus-left-panel.collapsed {
@@ -510,155 +518,7 @@
   }
 }
 
-/* 深色主题支持 */
-@media (prefers-color-scheme: dark) {
-  .gitlab-board-plus-top-tabs {
-    background: #1f2937;
-    border-bottom-color: #374151;
-  }
-  
-  .boards-tab {
-    color: #9ca3af;
-  }
-  
-  .boards-tab:hover {
-    background: #374151;
-    color: #d1d5db;
-    border-bottom-color: #4b5563;
-  }
-  
-  .boards-tab.active {
-    color: #3b82f6;
-    border-bottom-color: #3b82f6;
-  }
-  
-  .gitlab-board-plus-left-panel {
-    background: #1f2937;
-    border-right-color: #374151;
-  }
-  
-  .left-panel-header {
-    background: #111827;
-    border-bottom-color: #374151;
-  }
-  
-  .panel-title {
-    color: #f9fafb;
-  }
-  
-  .panel-toggle-btn {
-    color: #9ca3af;
-  }
-  
-  .panel-toggle-btn:hover {
-    background: #374151;
-  }
-  
-  .filter-section {
-    background: #111827;
-    border-color: #374151;
-  }
-  
-  .filter-section-header {
-    background: #1f2937;
-    border-bottom-color: #374151;
-  }
-  
-  .filter-section-header:hover {
-    background: #374151;
-  }
-  
-  .section-title {
-    color: #f9fafb;
-  }
-  
-  .section-count {
-    background: #374151;
-    color: #9ca3af;
-  }
-  
-  .filter-item:hover {
-    background: #1f2937;
-  }
-  
-  .filter-item.active {
-    background: #1e40af;
-    color: #93c5fd;
-  }
-  
-  .loading-placeholder {
-    color: #9ca3af;
-  }
-  
-  .attribute-label-color {
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-  
-  .attribute-name {
-    color: #f9fafb;
-  }
-  
-  .filter-item.active .attribute-name {
-    color: #93c5fd;
-  }
-  
-  .attribute-count {
-    background: #374151;
-    color: #9ca3af;
-  }
-  
-  .filter-item.active .attribute-count {
-    background: #1e40af;
-    color: #93c5fd;
-  }
-  
-  .filter-actions {
-    border-top-color: #374151;
-  }
-  
-  .clear-all-btn {
-    background: #374151;
-    border-color: #4b5563;
-    color: #d1d5db;
-  }
-  
-  .clear-all-btn:hover {
-    background: #4b5563;
-    border-color: #6b7280;
-  }
-  
-  .gitlab-board-plus-search-section {
-    background: #1f2937;
-    border-bottom-color: #374151;
-  }
-  
-  .search-placeholder {
-    background: #374151;
-    border-color: #4b5563;
-    color: #9ca3af;
-  }
-  
-  .gitlab-board-plus-boards-section {
-    background: #1f2937;
-  }
-  
-  .boards-placeholder {
-    color: #9ca3af;
-  }
-  
-  .board-stats {
-    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
-    border-color: #4b5563;
-  }
-  
-  .board-stats .stat-item strong {
-    color: #f9fafb;
-  }
-  
-  .board-stats .stat-item span {
-    color: #d1d5db;
-  }
-}
+
 
 /* 打印样式 */
 @media print {
@@ -674,10 +534,8 @@
 
 /* 焦点和无障碍样式 */
 .boards-tab:focus,
-.filter-section-header:focus,
-.filter-item:focus,
-.panel-toggle-btn:focus,
-.clear-all-btn:focus {
+.filter-template-item:focus,
+.panel-toggle-btn:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
