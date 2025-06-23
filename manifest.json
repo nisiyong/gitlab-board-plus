@@ -2,40 +2,22 @@
   "manifest_version": 3,
   "name": "GitLab Board Plus",
   "version": "1.0.0",
-  "description": "增强 GitLab Board 管理功能，提供更好的项目管理体验",
+  "description": "Enhance GitLab Issue Boards with advanced filtering and improved UX",
   "permissions": [
     "activeTab",
-    "storage",
-    "scripting"
+    "storage"
   ],
-  "host_permissions": [
-    "https://*.gitlab.com/*",
-    "https://*.gitlab.io/*",
-    "http://localhost:*/*"
-  ],
-  "optional_permissions": [
-    "tabs"
-  ],
-  "optional_host_permissions": [
-    "https://*/*",
-    "http://*/*"
-  ],
-  "background": {
-    "service_worker": "src/background.js",
-    "type": "module"
-  },
   "content_scripts": [
     {
-      "matches": [
-        "https://*.gitlab.com/*",
-        "https://*.gitlab.io/*",
-        "http://localhost:*/*"
-      ],
+      "matches": ["*://*/*/boards", "*://*/*/boards/*", "*://*/issues/boards", "*://*/issues/boards/*"],
       "js": ["src/content.js"],
       "css": ["src/styles/content.css"],
       "run_at": "document_end"
     }
   ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
   "action": {
     "default_popup": "src/popup/popup.html",
     "default_title": "GitLab Board Plus",
@@ -51,5 +33,11 @@
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["debug-boards.js"],
+      "matches": ["*://*/*"]
+    }
+  ]
 } 

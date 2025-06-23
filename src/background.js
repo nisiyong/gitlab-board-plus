@@ -232,6 +232,61 @@ chrome.runtime.onInstalled.addListener(async () => {
   await gitlabAPI.init();
 });
 
+// 监听标签页更新，自动检测 GitLab Board 页面
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  // 只在页面完全加载后处理
+  if (changeInfo.status === 'complete' && tab.url) {
+    await handleTabUpdate(tabId, tab);
+  }
+});
+
+// 处理标签页更新
+async function handleTabUpdate(tabId, tab) {
+  try {
+    // 检查是否是 GitLab Board 页面
+    if (isGitLabBoardPage(tab.url)) {
+      console.log('检测到 GitLab Board 页面:', tab.url);
+      
+      // 自动检测 GitLab 实例并保存配置
+      const gitlabUrl = extractGitLabBaseUrl(tab.url);
+      if (gitlabUrl) {
+        // 保存检测到的 GitLab URL（如果还没有配置的话）
+        const settings = await gitlabAPI.getStoredSettings();
+        if (!settings.gitlabUrl) {
+          await gitlabAPI.saveSettings({
+            gitlabUrl: gitlabUrl,
+            accessToken: settings.accessToken || ''
+          });
+          console.log('自动保存 GitLab URL:', gitlabUrl);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('处理标签页更新时出错:', error);
+  }
+}
+
+// 检查是否是 GitLab Board 页面
+function isGitLabBoardPage(url) {
+  try {
+    const urlObj = new URL(url);
+    // 检查路径是否包含 /-/boards
+    return urlObj.pathname.includes('/-/boards');
+  } catch (error) {
+    return false;
+  }
+}
+
+// 提取 GitLab 基础 URL
+function extractGitLabBaseUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    return `${urlObj.protocol}//${urlObj.host}`;
+  } catch (error) {
+    return null;
+  }
+}
+
 // 监听来自 content script 和 popup 的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   handleMessage(request, sender, sendResponse);
@@ -252,6 +307,11 @@ async function handleMessage(request, sender, sendResponse) {
       case 'getBoards':
         const boards = await gitlabAPI.getProjectBoards(request.projectId);
         sendResponse({ success: true, data: boards });
+        break;
+
+      case 'getProjectBoards':
+        const projectBoards = await gitlabAPI.getProjectBoards(request.projectId);
+        sendResponse({ success: true, boards: projectBoards });
         break;
 
       case 'getBoardLists':
