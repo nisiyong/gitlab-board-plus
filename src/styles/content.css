@@ -270,25 +270,7 @@
   flex-shrink: 0;
 }
 
-/* issues-details-filters 容器 - 一行布局 */
-.gitlab-board-plus-search-section .issues-details-filters {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-}
-
-/* 搜索栏容器自适应宽度 */
-.gitlab-board-plus-search-section .vue-filtered-search-bar-container {
-  flex: 1;
-  min-width: 0;
-}
-
-/* filter-dropdown-container 保持在右侧，不换行 */
-.gitlab-board-plus-search-section .filter-dropdown-container {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
+/* 搜索区域保持原有 issues-filters 的样式不变 */
 
 .search-placeholder {
   padding: 12px;

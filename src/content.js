@@ -264,37 +264,15 @@ class GitLabBoardEnhancer {
       // 保存原有的元素引用
       const originalIssuesFilters = boardsApp.querySelector('.issues-filters');
       const originalBoardsList = boardsApp.querySelector('[data-qa-selector="boards_list"]');
-      const originalFilteredSearch = boardsApp.querySelector('[data-testid="issue-board-filtered-search"]');
       
       // 获取新结构中的目标区域
       const searchSection = newStructure.querySelector('.gitlab-board-plus-search-section');
       const boardsSection = newStructure.querySelector('.gitlab-board-plus-boards-section');
       
-      // 创建 issues-details-filters 容器并将搜索相关元素放入其中
+      // 将原有的 issues-filters 整体移动到搜索区域，不修改其内部结构
       if (originalIssuesFilters && searchSection) {
-        // 创建 issues-details-filters 容器
-        const issuesDetailsFilters = document.createElement('div');
-        issuesDetailsFilters.className = 'issues-details-filters';
-        
-        // 查找 vue-filtered-search-bar-container 元素
-        const vueFilteredSearchContainer = originalIssuesFilters.querySelector('.vue-filtered-search-bar-container');
-        const filterDropdownContainer = originalIssuesFilters.querySelector('.filter-dropdown-container');
-        
-        // 将 vue-filtered-search-bar-container 移动到 issues-details-filters 中
-        if (vueFilteredSearchContainer) {
-          issuesDetailsFilters.appendChild(vueFilteredSearchContainer);
-          console.log('✅ Moved vue-filtered-search-bar-container to issues-details-filters');
-        }
-        
-        // 将 filter-dropdown-container 也移动到 issues-details-filters 中
-        if (filterDropdownContainer) {
-          issuesDetailsFilters.appendChild(filterDropdownContainer);
-          console.log('✅ Moved filter-dropdown-container to issues-details-filters');
-        }
-        
-        // 将 issues-details-filters 容器添加到搜索区域
-        searchSection.appendChild(issuesDetailsFilters);
-        console.log('✅ Created and populated issues-details-filters container');
+        searchSection.appendChild(originalIssuesFilters);
+        console.log('✅ Moved original issues-filters to search section');
       }
       
       // 移动 boards 列表
