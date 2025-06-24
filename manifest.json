@@ -10,7 +10,7 @@
   "content_scripts": [
     {
       "matches": ["*://*/*/boards", "*://*/*/boards/*", "*://*/issues/boards", "*://*/issues/boards/*"],
-      "js": ["src/content.js"],
+      "js": ["src/content/index.js"],
       "css": ["src/styles/content.css"],
       "run_at": "document_end"
     }
@@ -36,7 +36,13 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["debug-boards.js"],
+      "resources": [
+        "debug-boards.js",
+        "src/content/utils.js",
+        "src/content/filters-manager.js",
+        "src/content/board-enhancer.js",
+        "src/content/content-main.js"
+      ],
       "matches": ["*://*/*"]
     }
   ]
