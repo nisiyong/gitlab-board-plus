@@ -7,71 +7,103 @@ class GitLabUtils {
   static getCurrentUser() {
     try {
       // 尝试从多个地方获取当前用户信息
+      let username = null;
+      let avatarUrl = null;
+      let name = null;
       
       // 方法1: 从页面的 gon 对象获取（GitLab 的全局对象）
       if (window.gon && window.gon.current_username) {
-        console.log(`✅ Found current user from gon: ${window.gon.current_username}`);
-        return window.gon.current_username;
+        username = window.gon.current_username;
+        name = window.gon.current_user_fullname || username;
+        avatarUrl = window.gon.current_user_avatar_url;
+        console.log(`✅ Found current user from gon: ${username}`);
       }
       
       // 方法2: 从用户菜单获取
-      const userMenu = document.querySelector('[data-qa-selector="user_menu"]') ||
-                      document.querySelector('.header-user-dropdown-toggle') ||
-                      document.querySelector('.user-menu') ||
-                      document.querySelector('.navbar-nav .dropdown');
-      
-      if (userMenu) {
-        // 尝试从用户头像的alt属性获取
-        const userImg = userMenu.querySelector('img');
-        if (userImg && userImg.alt) {
-          console.log(`✅ Found current user from avatar alt: ${userImg.alt}`);
-          return userImg.alt;
-        }
+      if (!username) {
+        const userMenu = document.querySelector('[data-qa-selector="user_menu"]') ||
+                        document.querySelector('.header-user-dropdown-toggle') ||
+                        document.querySelector('.user-menu') ||
+                        document.querySelector('.navbar-nav .dropdown');
         
-        // 尝试从用户头像的data属性获取
-        if (userImg && userImg.dataset.user) {
-          console.log(`✅ Found current user from avatar data: ${userImg.dataset.user}`);
-          return userImg.dataset.user;
-        }
-        
-        // 尝试从链接href获取用户名
-        const userLink = userMenu.querySelector('a[href*="/"]');
-        if (userLink) {
-          const href = userLink.getAttribute('href');
-          const userMatch = href.match(/\/([^\/]+)$/);
-          if (userMatch && userMatch[1] && !userMatch[1].includes('.')) {
-            console.log(`✅ Found current user from link: ${userMatch[1]}`);
-            return userMatch[1];
+        if (userMenu) {
+          // 尝试从用户头像获取信息
+          const userImg = userMenu.querySelector('img');
+          if (userImg) {
+            avatarUrl = userImg.src;
+            username = userImg.getAttribute('data-username') || 
+                      userImg.getAttribute('data-user') ||
+                      userImg.alt;
+            name = userImg.getAttribute('title') || userImg.alt;
+          }
+          
+          // 尝试从链接href获取用户名
+          if (!username) {
+            const userLink = userMenu.querySelector('a[href*="/"]');
+            if (userLink) {
+              const href = userLink.getAttribute('href');
+              const userMatch = href.match(/\/([^\/]+)$/);
+              if (userMatch && userMatch[1] && !userMatch[1].includes('.')) {
+                username = userMatch[1];
+                name = userLink.textContent.trim() || username;
+              }
+            }
+          }
+          
+          if (username) {
+            console.log(`✅ Found current user from user menu: ${username}`);
           }
         }
       }
       
       // 方法3: 从页面的 data 属性获取
-      const bodyData = document.body.dataset;
-      if (bodyData.user || bodyData.username) {
-        const username = bodyData.user || bodyData.username;
-        console.log(`✅ Found current user from body data: ${username}`);
-        return username;
+      if (!username) {
+        const bodyData = document.body.dataset;
+        if (bodyData.user || bodyData.username) {
+          username = bodyData.user || bodyData.username;
+          console.log(`✅ Found current user from body data: ${username}`);
+        }
       }
       
       // 方法4: 从 meta 标签获取
-      const userMeta = document.querySelector('meta[name="user-login"]') ||
-                      document.querySelector('meta[name="current-user"]') ||
-                      document.querySelector('meta[name="current-user-id"]');
-      if (userMeta) {
-        const username = userMeta.getAttribute('content');
-        console.log(`✅ Found current user from meta: ${username}`);
-        return username;
+      if (!username) {
+        const userMeta = document.querySelector('meta[name="user-login"]') ||
+                        document.querySelector('meta[name="current-user"]') ||
+                        document.querySelector('meta[name="current-user-id"]');
+        if (userMeta) {
+          username = userMeta.getAttribute('content');
+          console.log(`✅ Found current user from meta: ${username}`);
+        }
       }
       
       // 方法5: 从当前URL路径尝试提取（如果在用户profile页面）
-      const currentPath = window.location.pathname;
-      if (currentPath.startsWith('/users/')) {
-        const userMatch = currentPath.match(/\/users\/([^\/]+)/);
-        if (userMatch && userMatch[1]) {
-          console.log(`✅ Found current user from URL path: ${userMatch[1]}`);
-          return userMatch[1];
+      if (!username) {
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/users/')) {
+          const userMatch = currentPath.match(/\/users\/([^\/]+)/);
+          if (userMatch && userMatch[1]) {
+            username = userMatch[1];
+            console.log(`✅ Found current user from URL path: ${username}`);
+          }
         }
+      }
+      
+      if (username) {
+        // 返回完整的用户对象
+        const userObj = {
+          username,
+          name: name || username,
+          avatarUrl
+        };
+        
+        // 为了向后兼容，设置一个username属性到返回对象上
+        userObj.toString = () => username;
+        Object.defineProperty(userObj, 'valueOf', {
+          value: () => username,
+          enumerable: false
+        });
+        
+        return userObj;
       }
       
       console.warn('❌ Could not determine current user from any source');
@@ -336,6 +368,112 @@ class GitLabUtils {
   static getCurrentBoardId() {
     const match = window.location.pathname.match(/\/boards\/(\d+)/);
     return match ? match[1] : null;
+  }
+
+  // 通过 GraphQL API 获取项目成员
+  static async fetchProjectMembersFromAPI() {
+    try {
+      const projectId = this.extractProjectId();
+      if (!projectId) {
+        console.warn('❌ Could not extract project ID');
+        return [];
+      }
+
+      const csrfToken = this.getCSRFToken();
+      if (!csrfToken) {
+        console.warn('❌ Could not get CSRF token');
+        return [];
+      }
+
+      // 构建 GraphQL 请求
+      const query = {
+        operationName: "searchUsers",
+        variables: {
+          isProject: true,
+          fullPath: projectId,
+          search: ""
+        },
+        query: `query searchUsers($fullPath: ID!, $search: String, $isProject: Boolean = false) {
+          group(fullPath: $fullPath) @skip(if: $isProject) {
+            id
+            groupMembers(
+              search: $search
+              relations: [DIRECT, INHERITED, SHARED_FROM_GROUPS]
+            ) {
+              nodes {
+                id
+                user {
+                  ...User
+                  __typename
+                }
+                __typename
+              }
+              __typename
+            }
+            __typename
+          }
+          project(fullPath: $fullPath) @include(if: $isProject) {
+            id
+            projectMembers(search: $search, relations: [DIRECT, INHERITED, INVITED_GROUPS]) {
+              nodes {
+                id
+                user {
+                  ...User
+                  __typename
+                }
+                __typename
+              }
+              __typename
+            }
+            __typename
+          }
+        }
+
+        fragment User on User {
+          id
+          avatarUrl
+          name
+          username
+          __typename
+        }`
+      };
+
+      // 发送 GraphQL 请求
+      const response = await fetch(`${window.location.origin}/api/graphql`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify([query])
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data[0]?.data?.project?.projectMembers?.nodes) {
+        const members = data[0].data.project.projectMembers.nodes.map(node => ({
+          id: node.user.id,
+          username: node.user.username,
+          name: node.user.name,
+          avatarUrl: node.user.avatarUrl
+        }));
+
+        console.log(`✅ Fetched ${members.length} project members from API:`, members);
+        return members;
+      } else {
+        console.warn('❌ No project members data found in API response');
+        return [];
+      }
+
+    } catch (error) {
+      console.error('❌ Error fetching project members from API:', error);
+      // 如果 API 调用失败，回退到页面提取方法
+      return this.extractMembersFromPage();
+    }
   }
 
   // 获取 CSRF Token

@@ -59,7 +59,8 @@ class FiltersShortcutsManager {
             icon: '👤',
             filter: 'assignee:@me',
             active: false,
-            isDefault: true
+            isDefault: true,
+            userData: this.currentUser // 使用当前用户数据
           }
         ]
       },
@@ -76,7 +77,8 @@ class FiltersShortcutsManager {
             icon: '✍️',
             filter: 'author:@me',
             active: false,
-            isDefault: true
+            isDefault: true,
+            userData: this.currentUser // 使用当前用户数据
           }
         ]
       },
@@ -120,8 +122,8 @@ class FiltersShortcutsManager {
   // 加载项目成员
   async loadProjectMembers() {
     try {
-      // 从页面中提取成员信息
-      const members = await GitLabUtils.extractMembersFromPage();
+      // 使用 GraphQL API 获取成员信息
+      const members = await GitLabUtils.fetchProjectMembersFromAPI();
       
       // 更新指派人和创建人组
       const assigneeGroup = this.filterGroups.find(g => g.id === 'assignee');
@@ -133,8 +135,8 @@ class FiltersShortcutsManager {
           if (member.username !== this.currentUser?.username) {
             assigneeGroup.items.push({
               id: `assignee-${member.username}`,
-              name: member.name || member.username,
-              icon: '👤',
+              name: member.username, // 直接使用 username
+              icon: null, // 不使用 emoji，使用头像
               filter: `assignee:@${member.username}`,
               active: false,
               userData: member
@@ -149,8 +151,8 @@ class FiltersShortcutsManager {
           if (member.username !== this.currentUser?.username) {
             authorGroup.items.push({
               id: `author-${member.username}`,
-              name: member.name || member.username,
-              icon: '✍️',
+              name: member.username, // 直接使用 username
+              icon: null, // 不使用 emoji，使用头像
               filter: `author:@${member.username}`,
               active: false,
               userData: member
@@ -271,6 +273,16 @@ class FiltersShortcutsManager {
   renderFilterItem(item, groupType) {
     const activeClass = item.active ? 'active' : '';
     
+    // 渲染图标或头像
+    let iconHtml = '';
+    if (item.userData && item.userData.avatarUrl) {
+      // 如果有用户数据和头像URL，显示头像
+      iconHtml = `<img class="user-avatar" src="${item.userData.avatarUrl}" alt="${item.name}" title="${item.userData.name || item.name}">`;
+    } else if (item.icon) {
+      // 否则显示普通图标
+      iconHtml = `<span class="item-icon">${item.icon}</span>`;
+    }
+    
     return `
       <div class="filter-item ${activeClass}" 
            data-item-id="${item.id}" 
@@ -278,7 +290,7 @@ class FiltersShortcutsManager {
            data-group-type="${groupType}">
         <input type="checkbox" ${item.active ? 'checked' : ''} title="多选模式：勾选此项可与其他选项组合使用" />
         <div class="item-content" title="单选模式：点击此处清除其他所有过滤器，只应用此条件">
-          <span class="item-icon">${item.icon}</span>
+          ${iconHtml}
           <span class="item-name">${item.name}</span>
         </div>
       </div>
