@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快捷过滤功能测试</title>
+    <link rel="stylesheet" href="src/styles/content.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .test-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-sidebar {
+            width: 300px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .test-main {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .test-title {
+            margin: 0 0 20px 0;
+            color: #374151;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .test-description {
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .test-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .test-features li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+            color: #374151;
+        }
+        
+        .test-features li:last-child {
+            border-bottom: none;
+        }
+        
+        .test-features li::before {
+            content: '✅';
+            margin-right: 8px;
+        }
+        
+        /* 模拟GitLab页面结构 */
+        .mock-gitlab {
+            display: none;
+        }
+        
+        .mock-gitlab .board-card-assignee img[data-username] {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-sidebar">
+            <!-- 快捷过滤将在这里渲染 -->
+            <div id="shortcuts-container" class="issues-filters-shortcuts"></div>
+        </div>
+        
+        <div class="test-main">
+            <h1 class="test-title">快捷过滤功能重构测试</h1>
+            
+            <div class="test-description">
+                <p>这个页面用于测试重构后的快捷过滤功能。新的快捷过滤支持以下特性：</p>
+            </div>
+            
+            <ul class="test-features">
+                <li>分组结构（指派人、创建人、里程碑、标签）</li>
+                <li>单选和多选模式支持</li>
+                <li>动态数据加载（从页面元素提取信息）</li>
+                <li>两行布局：搜索框 + 清除重置按钮</li>
+                <li>无标题设计，更简洁的界面</li>
+                <li>分组折叠/展开</li>
+                <li>状态持久化</li>
+                <li>URL参数同步</li>
+                <li>响应式设计</li>
+                <li>优雅的动画过渡</li>
+            </ul>
+            
+            <h2>测试说明</h2>
+            <p>1. 左侧应该显示新的快捷过滤界面</p>
+            <p>2. 可以尝试点击不同的过滤选项</p>
+            <p>3. 可以尝试搜索功能</p>
+            <p>4. 可以尝试折叠/展开分组</p>
+            <p>5. 刷新页面后状态应该保持</p>
+        </div>
+    </div>
+    
+    <!-- 模拟GitLab页面元素，用于数据提取测试 -->
+    <div class="mock-gitlab">
+        <div class="board-card-assignee">
+            <img data-username="john.doe" alt="John Doe" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiM2MzY2ZjEiLz4KPHRleHQgeD0iMTIiIHk9IjE2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxMiI+SjwvdGV4dD4KPC9zdmc+">
+        </div>
+        <div class="board-card-assignee">
+            <img data-username="jane.smith" alt="Jane Smith" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiNlZjQ0NDQiLz4KPHRleHQgeD0iMTIiIHk9IjE2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxMiI+SjwvdGV4dD4KPC9zdmc+">
+        </div>
+        
+        <a href="/users/alice.wilson">Alice Wilson</a>
+        <a href="/users/bob.johnson">Bob Johnson</a>
+        
+        <div data-testid="milestone-title">Version 1.0</div>
+        <div data-testid="milestone-title">Version 2.0</div>
+        
+        <div class="label" style="background-color: #ff6b6b;">bug</div>
+        <div class="label" style="background-color: #4ecdc4;">feature</div>
+        <div class="label" style="background-color: #45b7d1;">enhancement</div>
+    </div>
+
+    <script>
+        // 模拟GitLab Board Enhancer环境
+        class MockBoardEnhancer {
+            getCurrentUser() {
+                return { username: 'current-user', name: 'Current User' };
+            }
+            
+            getSearchInput() {
+                return null; // 模拟没有搜索输入框
+            }
+            
+            applySearchFilter(searchInput, filterQuery) {
+                console.log('🔍 Mock applying search filter:', filterQuery);
+                // 在测试环境中，只是记录到控制台
+                const resultDiv = document.createElement('div');
+                resultDiv.style.cssText = 'position: fixed; top: 10px; right: 10px; background: #1e40af; color: white; padding: 8px 12px; border-radius: 4px; font-size: 12px; z-index: 9999;';
+                resultDiv.textContent = `Applied filter: ${filterQuery || '(none)'}`;
+                document.body.appendChild(resultDiv);
+                
+                setTimeout(() => {
+                    document.body.removeChild(resultDiv);
+                }, 3000);
+            }
+        }
+        
+        // 等待页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('shortcuts-container');
+            const mockEnhancer = new MockBoardEnhancer();
+            
+            // 这里需要包含重构后的FiltersShortcutsManager类代码
+            // 由于代码较长，在实际使用时需要引入完整的content.js文件
+            console.log('📋 Test page loaded. Please load the actual FiltersShortcutsManager to see the functionality.');
+            
+            // 提示信息
+            container.innerHTML = `
+                <div style="padding: 20px; text-align: center; color: #6b7280;">
+                    <p>请在控制台中运行以下代码来测试：</p>
+                    <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                        // 首先需要加载FiltersShortcutsManager类
+                        // 然后运行: new FiltersShortcutsManager(document.getElementById('shortcuts-container'), new MockBoardEnhancer());
+                    </code>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html> 
