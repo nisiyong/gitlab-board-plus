@@ -143,120 +143,81 @@ class GitLabBoardEnhancer {
     console.log('Starting boards app restructuring...');
 
     try {
-      // 添加调试模式类，让原始下拉框可见
-      boardsApp.classList.add('gitlab-board-plus-debug');
-      
       // 创建新的结构
       const newStructure = this.createNewBoardStructure();
       
       // 将原有内容移动到新结构中
       this.moveExistingContent(boardsApp, newStructure);
       
+      // 创建快捷过滤模块
+      const filtersShortcuts = newStructure.querySelector('.issues-filters-shortcuts');
+      if (filtersShortcuts) {
+        this.createFiltersShortcuts(filtersShortcuts);
+      }
+      
       // 将新结构插入到页面中
       boardsApp.innerHTML = '';
       boardsApp.appendChild(newStructure);
       
-      // 尝试获取 boards 数据并创建 tabs
-      this.initializeBoardsTabs().then((success) => {
-        if (success) {
-          console.log('✅ Boards tabs initialized successfully');
-          // 成功获取数据后，隐藏原始下拉框
-          boardsApp.classList.remove('gitlab-board-plus-debug');
-          boardsApp.classList.add('gitlab-board-plus-restructured');
-        } else {
-          console.warn('⚠️ Failed to initialize boards tabs, keeping debug mode');
-          // 保持调试模式，让用户能看到原始下拉框
-        }
-      });
+      // 标记已完成重构
+      boardsApp.classList.add('gitlab-board-plus-restructured');
 
       console.log('✅ Board restructuring completed');
       
+      // 创建 board tabs - 延迟一点确保 DOM 更新完成
+      setTimeout(() => {
+        this.createBoardTabsAfterRestructure();
+      }, 100);
+      
     } catch (error) {
       console.error('❌ Error during board restructuring:', error);
-      // 出错时也保持调试模式
-    }
-  }
-
-  async initializeBoardsTabs() {
-    const topTabsArea = document.querySelector('.gitlab-board-plus-top-tabs');
-    if (!topTabsArea) {
-      console.error('Top tabs area not found');
-      return false;
-    }
-
-    try {
-      // 查找 boards dropdown
-      const boardsDropdown = document.querySelector('[data-testid="boards-selector"]') || 
-                            document.querySelector('.boards-switcher');
-      
-      if (!boardsDropdown) {
-        console.error('Boards dropdown not found');
-        return false;
-      }
-
-      console.log('Found boards dropdown, initializing tabs...');
-      
-      // 获取当前 board ID
-      const currentBoardId = this.getCurrentBoardId();
-      
-      // 创建 tabs
-      await this.createBoardTabs(topTabsArea, currentBoardId, boardsDropdown);
-      
-      // 检查是否成功创建了 tabs
-      const tabs = topTabsArea.querySelectorAll('.boards-tab');
-      if (tabs.length > 0) {
-        console.log(`✅ Successfully created ${tabs.length} board tabs`);
-        return true;
-      } else {
-        console.warn('⚠️ No tabs were created');
-        return false;
-      }
-      
-    } catch (error) {
-      console.error('❌ Error initializing boards tabs:', error);
-      return false;
     }
   }
 
   // 创建新的 board 结构
   createNewBoardStructure() {
-    const container = document.createElement('div');
-    container.className = 'gitlab-board-plus-container';
+    // 按照期望布局：boards-tabs 容器 > (顶部: tabs UI, 下方: 左右布局)
+    const boardsTabs = document.createElement('div');
+    boardsTabs.setAttribute('data-testid', 'boards-tabs');
+    boardsTabs.className = 'boards-tabs-container';
     
-    // 顶部 Tabs 区域
-    const topTabsArea = document.createElement('div');
-    topTabsArea.className = 'gitlab-board-plus-top-tabs';
+    // 顶部：真正的 tabs UI 容器
+    const tabsWrapper = document.createElement('div');
+    tabsWrapper.className = 'boards-tabs-wrapper';
     
-    // 主要内容区域
-    const mainContent = document.createElement('div');
-    mainContent.className = 'gitlab-board-plus-main-content';
+    // 下方：左右布局容器
+    const contentContainer = document.createElement('div');
+    contentContainer.className = 'boards-content-container';
     
-    // 左侧过滤面板
-    const leftPanel = this.createLeftFilterPanel();
+    // 左侧：看板快捷过滤模块
+    const filtersShortcuts = document.createElement('div');
+    filtersShortcuts.className = 'issues-filters-shortcuts';
     
-    // 右侧内容区域
-    const rightPanel = document.createElement('div');
-    rightPanel.className = 'gitlab-board-plus-right-panel';
+    // 右侧：过滤模块+看板列表的容器
+    const rightContainer = document.createElement('div');
+    rightContainer.className = 'boards-right-container';
     
-    // 右侧搜索区域
-    const searchSection = document.createElement('div');
-    searchSection.className = 'gitlab-board-plus-search-section';
+    // 右侧内的过滤模块容器（将在moveExistingContent中填充）
+    const filtersContainer = document.createElement('div');
+    filtersContainer.className = 'issues-filters-container';
     
-    // 右侧 Boards 区域
-    const boardsSection = document.createElement('div');
-    boardsSection.className = 'gitlab-board-plus-boards-section';
+    // 右侧内的看板列表容器（将在moveExistingContent中填充）
+    const boardsListContainer = document.createElement('div');
+    boardsListContainer.className = 'boards-list-container';
     
-    // 组装结构
-    rightPanel.appendChild(searchSection);
-    rightPanel.appendChild(boardsSection);
+    // 组装右侧容器
+    rightContainer.appendChild(filtersContainer);
+    rightContainer.appendChild(boardsListContainer);
     
-    mainContent.appendChild(leftPanel);
-    mainContent.appendChild(rightPanel);
+    // 组装左右布局容器
+    contentContainer.appendChild(filtersShortcuts);
+    contentContainer.appendChild(rightContainer);
     
-    container.appendChild(topTabsArea);
-    container.appendChild(mainContent);
+    // 组装最终结构：tabs 在顶部，左右布局在下方
+    boardsTabs.appendChild(tabsWrapper);
+    boardsTabs.appendChild(contentContainer);
     
-    return container;
+    return boardsTabs;
   }
 
   moveExistingContent(boardsApp, newStructure) {
@@ -264,21 +225,28 @@ class GitLabBoardEnhancer {
       // 保存原有的元素引用
       const originalIssuesFilters = boardsApp.querySelector('.issues-filters');
       const originalBoardsList = boardsApp.querySelector('[data-qa-selector="boards_list"]');
+      const originalVPortal = boardsApp.querySelector('.v-portal');
       
       // 获取新结构中的目标区域
-      const searchSection = newStructure.querySelector('.gitlab-board-plus-search-section');
-      const boardsSection = newStructure.querySelector('.gitlab-board-plus-boards-section');
+      const filtersContainer = newStructure.querySelector('.issues-filters-container');
+      const boardsListContainer = newStructure.querySelector('.boards-list-container');
       
-      // 将原有的 issues-filters 整体移动到搜索区域，不修改其内部结构
-      if (originalIssuesFilters && searchSection) {
-        searchSection.appendChild(originalIssuesFilters);
-        console.log('✅ Moved original issues-filters to search section');
+      // 将原有的 issues-filters 整体移动到过滤容器
+      if (originalIssuesFilters && filtersContainer) {
+        filtersContainer.appendChild(originalIssuesFilters);
+        console.log('✅ Moved original issues-filters to filters container');
       }
       
       // 移动 boards 列表
-      if (originalBoardsList && boardsSection) {
-        boardsSection.appendChild(originalBoardsList);
-        console.log('✅ Moved boards list to boards section');
+      if (originalBoardsList && boardsListContainer) {
+        boardsListContainer.appendChild(originalBoardsList);
+        console.log('✅ Moved boards list to boards list container');
+      }
+      
+      // 移动 v-portal（如果存在）
+      if (originalVPortal && boardsListContainer) {
+        boardsListContainer.appendChild(originalVPortal);
+        console.log('✅ Moved v-portal to boards list container');
       }
       
     } catch (error) {
@@ -286,128 +254,39 @@ class GitLabBoardEnhancer {
     }
   }
 
-  // 创建顶部 Boards Tabs
-  createBoardsTabs(container) {
-    // 查找现有的 boards dropdown 来获取 boards 数据
-    const boardsDropdown = document.querySelector('[data-testid="boards-selector"]') || 
-                          document.querySelector('.boards-switcher');
-    
-    if (!boardsDropdown) {
-      // 如果找不到原始的下拉框，创建一个基本的 tab
-      container.innerHTML = `
-        <div class="boards-tabs-wrapper">
-          <div class="boards-tab active">
-            <span class="tab-icon">📋</span>
-            <span class="tab-name">当前 Board</span>
-          </div>
-        </div>
-      `;
-      return;
-    }
-
-    // 获取当前 Board ID
-    const currentBoardId = this.getCurrentBoardId();
-    
-    // 创建 tabs 容器
-    const tabsWrapper = document.createElement('div');
-    tabsWrapper.className = 'boards-tabs-wrapper';
-    
-    // 创建 tabs
-    this.createBoardTabs(tabsWrapper, currentBoardId, boardsDropdown);
-    
-    container.appendChild(tabsWrapper);
-    
-    // 监听 boards dropdown 的变化，更新 tabs
-    this.observeBoardsDropdown(boardsDropdown, tabsWrapper, currentBoardId);
-  }
-
-  // 创建左侧过滤面板
-  createLeftFilterPanel(container = null) {
-    // 如果没有传递容器，创建一个新的
-    if (!container) {
-      container = document.createElement('div');
-      container.className = 'gitlab-board-plus-left-panel';
-    }
-    
-    container.innerHTML = `
-      <div class="left-panel-header">
-        <h3 class="panel-title">条件模版</h3>
-        <button class="panel-toggle-btn" aria-label="收起/展开">
-          <span class="toggle-icon">⏷</span>
-        </button>
+  // 创建快捷过滤模块
+  createFiltersShortcuts(container) {
+    const shortcutsContent = `
+      <div class="shortcuts-header">
+        <h3 class="shortcuts-title">快捷过滤</h3>
       </div>
-      <div class="left-panel-content">
-        <div class="filter-templates">
-          <div class="filter-template-item active" data-template="default">
-            <span class="template-icon">📋</span>
-            <span class="template-name">默认</span>
+      <div class="shortcuts-content">
+        <div class="filter-shortcuts">
+          <div class="shortcut-item active" data-template="default">
+            <span class="shortcut-icon">📋</span>
+            <span class="shortcut-name">全部</span>
           </div>
           
-          <div class="filter-template-item" data-template="assigned-to-me">
-            <span class="template-icon">👤</span>
-            <span class="template-name">指派给我</span>
+          <div class="shortcut-item" data-template="assigned-to-me">
+            <span class="shortcut-icon">👤</span>
+            <span class="shortcut-name">指派给我</span>
           </div>
           
-          <div class="filter-template-item" data-template="created-by-me">
-            <span class="template-icon">✍️</span>
-            <span class="template-name">我创建的</span>
+          <div class="shortcut-item" data-template="created-by-me">
+            <span class="shortcut-icon">✍️</span>
+            <span class="shortcut-name">我创建的</span>
           </div>
         </div>
       </div>
     `;
     
-    // 绑定事件
-    this.bindLeftPanelEvents(container);
+    container.innerHTML = shortcutsContent;
     
-    // 根据当前URL参数设置活跃模版
-    this.setActiveTemplateFromUrl(container);
+    // 绑定快捷过滤事件
+    this.bindShortcutsEvents(container);
     
-    // 返回容器元素（用于新的调用方式）
-    return container;
-  }
-
-  // 初始化新结构的功能
-  initializeNewStructure() {
-    // 添加统计信息
-    this.addBoardStatistics();
-    
-    // 增强拖拽功能
-    this.enhanceDragAndDrop();
-  }
-
-
-
-  // 绑定左侧面板事件
-  bindLeftPanelEvents(container) {
-    // 面板收起/展开
-    const toggleBtn = container.querySelector('.panel-toggle-btn');
-    const panelContent = container.querySelector('.left-panel-content');
-    
-    if (toggleBtn && panelContent) {
-      toggleBtn.addEventListener('click', () => {
-        const isCollapsed = panelContent.classList.toggle('collapsed');
-        const icon = toggleBtn.querySelector('.toggle-icon');
-        icon.textContent = isCollapsed ? '⏵' : '⏷';
-        container.classList.toggle('collapsed', isCollapsed);
-      });
-    }
-
-    // 模版选择事件
-    const templateItems = container.querySelectorAll('.filter-template-item');
-    templateItems.forEach(item => {
-      item.addEventListener('click', () => {
-        // 移除所有活跃状态
-        templateItems.forEach(t => t.classList.remove('active'));
-        // 设置当前项为活跃
-        item.classList.add('active');
-        
-        // 获取模版类型并应用过滤
-        const templateType = item.getAttribute('data-template');
-        this.applyFilterTemplate(templateType);
-      });
-    });
-
-
+    // 根据当前URL参数设置活跃状态
+    this.setActiveShortcutFromUrl(container);
   }
 
   // 应用过滤模版
@@ -538,41 +417,25 @@ class GitLabBoardEnhancer {
   }
 
   // 根据当前URL参数设置活跃模版
-  setActiveTemplateFromUrl(container) {
-    try {
-      const currentUrl = new URL(window.location.href);
-      let activeTemplate = 'default';
-      
-      // 检查URL参数来确定当前活跃的模版
-      if (currentUrl.searchParams.has('assignee_username') || 
-          currentUrl.searchParams.has('assignee_id')) {
-        activeTemplate = 'assigned-to-me';
-      } else if (currentUrl.searchParams.has('author_username') || 
-                 currentUrl.searchParams.has('author_id')) {
-        activeTemplate = 'created-by-me';
-      }
-      
-      // 更新UI中的活跃状态
-      const templateItems = container.querySelectorAll('.filter-template-item');
-      templateItems.forEach(item => {
-        const templateType = item.getAttribute('data-template');
-        if (templateType === activeTemplate) {
-          item.classList.add('active');
-        } else {
-          item.classList.remove('active');
-        }
-      });
-      
-      console.log(`📍 Set active template from URL: ${activeTemplate}`);
-      
-    } catch (error) {
-      console.warn('❌ Error setting active template from URL:', error);
-      // 如果出错，默认选中第一个模版
-      const firstTemplate = container.querySelector('.filter-template-item');
-      if (firstTemplate) {
-        firstTemplate.classList.add('active');
-      }
+  setActiveFilterTemplate() {
+    const url = new URL(window.location.href);
+    const assignee = url.searchParams.get('assignee_username');
+    const author = url.searchParams.get('author_username');
+    
+    let activeTemplate = 'default';
+    
+    // 根据URL参数判断当前应该激活的模版
+    if (assignee === this.getCurrentUser()?.username) {
+      activeTemplate = 'assigned-to-me';
+    } else if (author === this.getCurrentUser()?.username) {
+      activeTemplate = 'created-by-me';
     }
+    
+    // 设置活跃状态
+    const shortcutItems = document.querySelectorAll('.shortcut-item');
+    shortcutItems.forEach(item => {
+      item.classList.toggle('active', item.getAttribute('data-template') === activeTemplate);
+    });
   }
 
   // 清除过滤模版
@@ -788,8 +651,6 @@ class GitLabBoardEnhancer {
       }, 2000);
     }
   }
-
-
 
   async createBoardTabs(container, currentBoardId, boardsDropdown) {
     // 检查是否已经有 tabs，如果有则不再修改
@@ -1442,10 +1303,6 @@ class GitLabBoardEnhancer {
     }
   }
 
-
-
-
-
   // 获取当前 Board ID
   getCurrentBoardId() {
     const match = window.location.pathname.match(/\/boards\/(\d+)/);
@@ -1575,6 +1432,79 @@ class GitLabBoardEnhancer {
         }, 1000);
       }
     }).observe(document, { subtree: true, childList: true });
+  }
+
+  // 绑定快捷过滤事件
+  bindShortcutsEvents(container) {
+    // 快捷过滤选择事件
+    const shortcutItems = container.querySelectorAll('.shortcut-item');
+    shortcutItems.forEach(item => {
+      item.addEventListener('click', () => {
+        // 移除所有活跃状态
+        shortcutItems.forEach(t => t.classList.remove('active'));
+        // 设置当前项为活跃
+        item.classList.add('active');
+        
+        // 获取模版类型并应用过滤
+        const templateType = item.getAttribute('data-template');
+        this.applyFilterTemplate(templateType);
+      });
+    });
+  }
+
+  // 根据URL参数设置活跃快捷过滤
+  setActiveShortcutFromUrl(container) {
+    const url = new URL(window.location.href);
+    const assignee = url.searchParams.get('assignee_username');
+    const author = url.searchParams.get('author_username');
+    
+    let activeTemplate = 'default';
+    
+    // 根据URL参数判断当前应该激活的模版
+    if (assignee === this.getCurrentUser()?.username) {
+      activeTemplate = 'assigned-to-me';
+    } else if (author === this.getCurrentUser()?.username) {
+      activeTemplate = 'created-by-me';
+    }
+    
+    // 设置活跃状态
+    const shortcutItems = container.querySelectorAll('.shortcut-item');
+    shortcutItems.forEach(item => {
+      item.classList.toggle('active', item.getAttribute('data-template') === activeTemplate);
+    });
+  }
+
+  // 创建 board tabs 后处理逻辑
+  createBoardTabsAfterRestructure() {
+    try {
+      console.log('🔄 Creating board tabs after restructure...');
+      
+      // 查找 boards-selector 
+      const boardsSelector = document.querySelector('[data-testid="boards-selector"]');
+      if (!boardsSelector) {
+        console.warn('❌ boards-selector not found for tabs creation');
+        return;
+      }
+      
+      // 获取当前 board ID
+      const currentBoardId = this.getCurrentBoardId();
+      console.log('Current board ID:', currentBoardId);
+      
+      // 查找已经创建的 tabs 容器
+      const tabsContainer = document.querySelector('.boards-tabs-wrapper');
+      if (!tabsContainer) {
+        console.warn('❌ boards-tabs-wrapper not found for tabs');
+        return;
+      }
+      
+      // 创建 board tabs
+      this.createBoardTabs(tabsContainer, currentBoardId, boardsSelector);
+      
+      console.log('✅ Board tabs creation completed');
+      
+    } catch (error) {
+      console.error('❌ Error creating board tabs after restructure:', error);
+    }
   }
 }
 
