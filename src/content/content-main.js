@@ -140,8 +140,8 @@ class GitLabBoardEnhancer {
         case 'assigned-to-me':
           // 获取当前用户信息
           const currentUser = GitLabUtils.getCurrentUser();
-          if (currentUser) {
-            currentUrl.searchParams.set('assignee_username', currentUser);
+          if (currentUser && currentUser.username) {
+            currentUrl.searchParams.set('assignee_username', currentUser.username);
           } else {
             // 如果无法获取用户名，使用GitLab的特殊参数
             currentUrl.searchParams.set('assignee_id', 'me');
@@ -150,8 +150,8 @@ class GitLabBoardEnhancer {
         case 'created-by-me':
           // 获取当前用户信息
           const currentAuthor = GitLabUtils.getCurrentUser();
-          if (currentAuthor) {
-            currentUrl.searchParams.set('author_username', currentAuthor);
+          if (currentAuthor && currentAuthor.username) {
+            currentUrl.searchParams.set('author_username', currentAuthor.username);
           } else {
             // 如果无法获取用户名，使用GitLab的特殊参数
             currentUrl.searchParams.set('author_id', 'me');
@@ -203,16 +203,16 @@ class GitLabBoardEnhancer {
         break;
       case 'assigned-to-me':
         const currentUser = GitLabUtils.getCurrentUser();
-        if (currentUser) {
-          filterQuery = `assignee:@${currentUser}`;
+        if (currentUser && currentUser.username) {
+          filterQuery = `assignee:@${currentUser.username}`;
         } else {
           filterQuery = 'assignee:@me';
         }
         break;
       case 'created-by-me':
         const currentAuthor = GitLabUtils.getCurrentUser();
-        if (currentAuthor) {
-          filterQuery = `author:@${currentAuthor}`;
+        if (currentAuthor && currentAuthor.username) {
+          filterQuery = `author:@${currentAuthor.username}`;
         } else {
           filterQuery = 'author:@me';
         }

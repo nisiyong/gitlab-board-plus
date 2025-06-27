@@ -57,7 +57,7 @@ class FiltersShortcutsManager {
             id: 'assigned-to-me',
             name: '我',
             icon: '👤',
-            filter: 'assignee:@me',
+            filter: `assignee:@${this.currentUser?.username || 'me'}`,
             active: false,
             isDefault: true,
             userData: this.currentUser // 使用当前用户数据
@@ -75,7 +75,7 @@ class FiltersShortcutsManager {
             id: 'created-by-me',
             name: '我',
             icon: '✍️',
-            filter: 'author:@me',
+            filter: `author:@${this.currentUser?.username || 'me'}`,
             active: false,
             isDefault: true,
             userData: this.currentUser // 使用当前用户数据
@@ -716,6 +716,8 @@ class FiltersShortcutsManager {
 
   // 保存分组折叠状态
   saveGroupCollapsedState(groupId, isCollapsed) {
+
+  
     try {
       const key = 'gitlab-board-plus-group-collapsed-states';
       const states = JSON.parse(localStorage.getItem(key) || '{}');
