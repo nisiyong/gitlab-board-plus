@@ -183,7 +183,7 @@ class FiltersShortcutsManager {
           id: `milestone-${milestone.id}`,
           name: milestone.title,
           icon: '🎯',
-          filter: `milestone:"${milestone.title}"`,
+          filter: `milestone_title:${milestone.title}`,
           active: false,
           milestoneData: milestone
         }));
@@ -354,14 +354,19 @@ class FiltersShortcutsManager {
         }
       }
     
-    // 所有组都使用统一的多选逻辑：整个按钮都可点击
+    // 根据组类型设置不同的提示和交互模式
+    const isRadioGroup = groupType === 'assignee' || groupType === 'author' || groupType === 'milestone';
+    const inputType = isRadioGroup ? 'radio' : 'checkbox';
+    const tooltipText = isRadioGroup ? '点击选择（单选）' : '点击切换选中状态（多选）';
+    const radioName = isRadioGroup ? `filter-${groupType}` : '';
+    
     return `
       <div class="filter-item ${activeClass}" 
            data-item-id="${item.id}" 
            data-filter="${item.filter}"
            data-group-type="${groupType}"
-           title="点击切换选中状态，支持多选">
-        <input type="checkbox" ${item.active ? 'checked' : ''} />
+           title="${tooltipText}">
+        <input type="${inputType}" ${radioName ? `name="${radioName}"` : ''} ${item.active ? 'checked' : ''} />
         <div class="item-content">
           ${iconHtml}
           <span class="${itemNameClass}" ${itemStyle}>${item.name}</span>
@@ -393,10 +398,10 @@ class FiltersShortcutsManager {
       });
     });
 
-    // 过滤项点击事件 - 所有组都使用统一的多选逻辑
+    // 过滤项点击事件 - 指派人、创建人和里程碑使用单选，标签使用多选
     const filterItems = this.container.querySelectorAll('.filter-item');
     filterItems.forEach(item => {
-      // 所有组：整个项目可点击，支持多选
+      // 整个项目可点击，根据组类型使用不同的选择模式
       item.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -405,11 +410,46 @@ class FiltersShortcutsManager {
     });
   }
 
-  // 处理过滤项点击（多选模式）
+  // 处理过滤项点击
   handleFilterItemClick(item) {
     const filter = item.getAttribute('data-filter');
+    const groupType = item.getAttribute('data-group-type');
     const checkbox = item.querySelector('input[type="checkbox"]');
     
+    // 对于指派人、创建人和里程碑组，使用单选模式
+    if (groupType === 'assignee' || groupType === 'author' || groupType === 'milestone') {
+      this.handleSingleSelectFilter(item, filter, groupType);
+    } else {
+      // 其他组（标签）使用多选模式
+      this.handleMultiSelectFilter(item, filter, checkbox);
+    }
+    
+    // 应用过滤器 - 通过URL参数
+    this.applyFiltersViaUrl();
+  }
+
+  // 处理单选过滤器（指派人、创建人、里程碑）
+  handleSingleSelectFilter(item, filter, groupType) {
+    const input = item.querySelector('input[type="radio"], input[type="checkbox"]');
+    
+    if (item.classList.contains('active')) {
+      // 取消激活
+      item.classList.remove('active');
+      if (input) input.checked = false;
+      this.activeFilters.delete(filter);
+    } else {
+      // 先清除同组的其他激活项
+      this.clearGroupActiveItems(groupType);
+      
+      // 激活当前项
+      item.classList.add('active');
+      if (input) input.checked = true;
+      this.activeFilters.add(filter);
+    }
+  }
+
+  // 处理多选过滤器（标签）
+  handleMultiSelectFilter(item, filter, checkbox) {
     if (item.classList.contains('active')) {
       // 取消激活
       item.classList.remove('active');
@@ -421,33 +461,115 @@ class FiltersShortcutsManager {
       if (checkbox) checkbox.checked = true;
       this.activeFilters.add(filter);
     }
-    
-    // 应用过滤器
-    this.applyCurrentFilters();
   }
 
+  // 清除指定组的所有激活项
+  clearGroupActiveItems(groupType) {
+    // 找到该组的所有项目
+    const groupItems = this.container.querySelectorAll(`[data-group-type="${groupType}"].filter-item.active`);
+    
+    groupItems.forEach(groupItem => {
+      const groupFilter = groupItem.getAttribute('data-filter');
+      
+      // 清除激活状态
+      groupItem.classList.remove('active');
+      const groupInput = groupItem.querySelector('input[type="checkbox"], input[type="radio"]');
+      if (groupInput) groupInput.checked = false;
+      
+      // 从激活过滤器集合中移除
+      this.activeFilters.delete(groupFilter);
+    });
+  }
 
+  // 通过URL参数应用过滤器
+  applyFiltersViaUrl() {
+    console.log('🔍 Applying filters via URL:', Array.from(this.activeFilters));
+    console.log('📊 Active filters count:', this.activeFilters.size);
+    
+    const url = new URL(window.location.href);
+    
+    // 清除现有的过滤参数
+    url.searchParams.delete('assignee_username');
+    url.searchParams.delete('author_username');
+    url.searchParams.delete('milestone_title');
+    url.searchParams.delete('label_name');
+    url.searchParams.delete('label_name[]');
+    
+    // 根据激活的过滤器设置URL参数
+    let filterCount = 0;
+    this.activeFilters.forEach(filter => {
+      filterCount++;
+      console.log(`🔗 Processing filter ${filterCount}/${this.activeFilters.size}:`, filter);
+      this.addFilterToUrl(url, filter);
+    });
+    
+    // 显示最终的URL参数
+    console.log('📋 Final URL parameters:');
+    console.log('  assignee_username:', url.searchParams.get('assignee_username'));
+    console.log('  author_username:', url.searchParams.get('author_username'));
+    console.log('  milestone_title:', url.searchParams.get('milestone_title'));
+    console.log('  label_name[]:', url.searchParams.getAll('label_name[]'));
+    
+    // 重新加载页面
+    console.log('🌐 Navigating to:', url.toString());
+    window.location.href = url.toString();
+  }
 
-  // 应用当前过滤器
+  // 将单个过滤器添加到URL
+  addFilterToUrl(url, filter) {
+    console.log('🔗 Adding filter to URL:', filter);
+    
+    // 解析过滤器格式，例如：assignee:@me, author:@username, milestone:"title", label:"name"
+    if (filter.startsWith('assignee:@')) {
+      const username = filter.replace('assignee:@', '');
+      // 指派人使用单个参数，不使用数组格式
+      url.searchParams.set('assignee_username', username);
+      console.log('  ➡️ Added assignee:', username);
+    } else if (filter.startsWith('author:@')) {
+      const username = filter.replace('author:@', '');
+      url.searchParams.set('author_username', username);
+      console.log('  ➡️ Added author:', username);
+    } else if (filter.startsWith('milestone_title:')) {
+      const milestone = filter.replace('milestone_title:', '');
+      url.searchParams.set('milestone_title', milestone);
+      console.log('  ➡️ Added milestone:', milestone);
+    } else if (filter.startsWith('label:"') && filter.endsWith('"')) {
+      const label = filter.slice(7, -1); // 去掉 label:" 和最后的 "
+      // GitLab使用数组格式的参数
+      url.searchParams.append('label_name[]', label);
+      console.log('  ➡️ Added label:', label);
+    } else {
+      console.log('  ❌ Unknown filter format:', filter);
+    }
+  }
+
+  // 应用当前过滤器（保留原方法作为备用）
   applyCurrentFilters() {
     const filterQuery = Array.from(this.activeFilters).join(' ');
     console.log('🔍 Applying filters:', filterQuery);
     
-    // 通过URL参数或搜索框应用过滤
-    this.boardEnhancer.applySearchFilter(
-      GitLabUtils.getSearchInput(),
-      filterQuery
-    );
+    // 通过URL参数应用过滤
+    this.applyFiltersViaUrl();
   }
 
   // 根据URL设置激活状态
   setActiveFiltersFromUrl() {
     try {
       const url = new URL(window.location.href);
+      console.log('🔍 Setting active filters from URL:', url.toString());
+      
+      // 获取URL参数
       const assignee = url.searchParams.get('assignee_username');
       const author = url.searchParams.get('author_username');
       const milestone = url.searchParams.get('milestone_title');
-      const labels = url.searchParams.getAll('label_name');
+      const labels = url.searchParams.getAll('label_name[]') || 
+                    (url.searchParams.get('label_name') ? [url.searchParams.get('label_name')] : []);
+      
+      console.log('📋 URL parameters parsed:');
+      console.log('  assignee:', assignee);
+      console.log('  author:', author);
+      console.log('  milestone:', milestone);
+      console.log('  labels:', labels);
       
       // 重置状态
       this.clearAllActiveStates();
@@ -456,24 +578,30 @@ class FiltersShortcutsManager {
       // 根据URL参数设置激活状态
       let hasActiveFilters = false;
       
+      // 处理指派人（单个）
       if (assignee) {
         this.activateFilterByValue('assignee', assignee);
         hasActiveFilters = true;
       }
       
+      // 处理创建人（单个）
       if (author) {
         this.activateFilterByValue('author', author);
         hasActiveFilters = true;
       }
       
+      // 处理里程碑（单个）
       if (milestone) {
         this.activateFilterByValue('milestone', milestone);
         hasActiveFilters = true;
       }
       
+      // 处理标签（支持多个）
       labels.forEach(label => {
-        this.activateFilterByValue('label', label);
-        hasActiveFilters = true;
+        if (label) {
+          this.activateFilterByValue('label', label);
+          hasActiveFilters = true;
+        }
       });
       
       // 如果没有任何激活的过滤器，激活默认的"全部"
@@ -489,13 +617,42 @@ class FiltersShortcutsManager {
 
   // 根据值激活过滤器
   activateFilterByValue(type, value) {
-    const items = this.container.querySelectorAll(`.filter-item[data-filter*="${type}:"]`);
+    // 构建查询选择器，针对里程碑使用正确的前缀
+    let searchPrefix = type;
+    if (type === 'milestone') {
+      searchPrefix = 'milestone_title';
+    }
+    
+    const items = this.container.querySelectorAll(`.filter-item[data-filter*="${searchPrefix}:"]`);
+    console.log(`🔍 Looking for ${type} filters with value "${value}", found ${items.length} items`);
+    
     items.forEach(item => {
       const filter = item.getAttribute('data-filter');
-      if (filter.includes(value)) {
+      console.log(`  📝 Checking filter: ${filter}`);
+      
+      // 根据不同类型进行匹配
+      let shouldActivate = false;
+      
+      if (type === 'assignee' && filter.startsWith('assignee:@')) {
+        const filterUsername = filter.replace('assignee:@', '');
+        shouldActivate = filterUsername === value;
+      } else if (type === 'author' && filter.startsWith('author:@')) {
+        const filterUsername = filter.replace('author:@', '');
+        shouldActivate = filterUsername === value;
+      } else if (type === 'milestone' && filter.startsWith('milestone_title:')) {
+        const filterMilestone = filter.replace('milestone_title:', '');
+        shouldActivate = filterMilestone === value;
+        console.log(`    🎯 Milestone comparison: "${filterMilestone}" === "${value}" = ${shouldActivate}`);
+      } else if (type === 'label' && filter.startsWith('label:"') && filter.endsWith('"')) {
+        const filterLabel = filter.slice(7, -1); // 去掉 label:" 和最后的 "
+        shouldActivate = filterLabel === value;
+      }
+      
+      if (shouldActivate) {
+        console.log(`  ✅ Activating filter: ${filter}`);
         item.classList.add('active');
-        const checkbox = item.querySelector('input[type="checkbox"]');
-        if (checkbox) checkbox.checked = true;
+        const input = item.querySelector('input[type="checkbox"], input[type="radio"]');
+        if (input) input.checked = true;
         this.activeFilters.add(filter);
       }
     });
@@ -511,17 +668,30 @@ class FiltersShortcutsManager {
     // 清空过滤器集合
     this.activeFilters.clear();
     
-    // 应用空过滤器（显示所有内容）
-    this.applyCurrentFilters();
-    
     // 添加重置动画效果
     const resetBtn = this.container.querySelector('.shortcuts-reset-btn');
     if (resetBtn) {
       resetBtn.classList.add('resetting');
-      setTimeout(() => {
-        resetBtn.classList.remove('resetting');
-      }, 600);
     }
+    
+    // 通过清除URL参数来重置过滤器
+    this.resetFiltersViaUrl();
+  }
+
+  // 通过URL参数重置过滤器
+  resetFiltersViaUrl() {
+    const url = new URL(window.location.href);
+    
+    // 清除所有过滤参数
+    url.searchParams.delete('assignee_username');
+    url.searchParams.delete('author_username');
+    url.searchParams.delete('milestone_title');
+    url.searchParams.delete('label_name');
+    url.searchParams.delete('label_name[]');
+    
+    // 重新加载页面
+    console.log('🌐 Resetting to:', url.toString());
+    window.location.href = url.toString();
   }
 
   // 激活默认过滤器（在取消所有多选项时调用）
@@ -581,8 +751,8 @@ class FiltersShortcutsManager {
     const activeItems = this.container.querySelectorAll('.filter-item.active');
     activeItems.forEach(item => {
       item.classList.remove('active');
-      const checkbox = item.querySelector('input[type="checkbox"]');
-      if (checkbox) checkbox.checked = false;
+      const input = item.querySelector('input[type="checkbox"], input[type="radio"]');
+      if (input) input.checked = false;
     });
   }
 
@@ -657,6 +827,71 @@ class FiltersShortcutsManager {
       // 隐藏没有可见项的分组
       groupElement.style.display = hasVisibleItems ? 'flex' : 'none';
     });
+  }
+
+  // 测试方法：验证URL参数处理
+  testUrlParameterHandling() {
+    console.log('🧪 Testing URL parameter handling...');
+    
+    // 测试多条件组合的URL
+    const testUrl = new URL('https://gitlab.example.com/boards/123?assignee_username=xiaojiezhi-jk&milestone_title=2025-07-03&label_name%5B%5D=bug&label_name%5B%5D=feature');
+    
+    console.log('Test URL with multiple filters:', testUrl.toString());
+    console.log('Assignee:', testUrl.searchParams.get('assignee_username'));
+    console.log('Author:', testUrl.searchParams.get('author_username'));
+    console.log('Milestone:', testUrl.searchParams.get('milestone_title'));
+    console.log('Labels:', testUrl.searchParams.getAll('label_name[]'));
+    
+         // 测试反向过程：从多个过滤器生成URL
+     const testFilters = [
+       'assignee:@xiaojiezhi-jk',
+       'milestone_title:2025-07-03',
+       'label:"bug"',
+       'label:"feature"',
+       'label:"enhancement"'
+     ];
+    
+    const newUrl = new URL('https://gitlab.example.com/boards/123');
+    console.log('🔗 Building URL from multiple filters:', testFilters);
+    
+    testFilters.forEach(filter => {
+      this.addFilterToUrl(newUrl, filter);
+    });
+    
+    console.log('Generated URL with multiple conditions:', newUrl.toString());
+    console.log('Generated assignee:', newUrl.searchParams.get('assignee_username'));
+    console.log('Generated author:', newUrl.searchParams.get('author_username'));
+    console.log('Generated milestone:', newUrl.searchParams.get('milestone_title'));
+    console.log('Generated labels:', newUrl.searchParams.getAll('label_name[]'));
+    
+    // 测试各种组合场景
+    console.log('🧪 Testing various filter combinations:');
+    
+    // 场景1：只有指派人
+    const url1 = new URL('https://gitlab.example.com/boards/123');
+    this.addFilterToUrl(url1, 'assignee:@user1');
+    console.log('  只有指派人:', url1.search);
+    
+    // 场景2：指派人 + 里程碑
+    const url2 = new URL('https://gitlab.example.com/boards/123');
+    this.addFilterToUrl(url2, 'assignee:@user1');
+    this.addFilterToUrl(url2, 'milestone:"Sprint 1"');
+    console.log('  指派人 + 里程碑:', url2.search);
+    
+         // 场景3：指派人 + 里程碑（单选） + 多个标签
+     const url3 = new URL('https://gitlab.example.com/boards/123');
+     this.addFilterToUrl(url3, 'assignee:@user1');
+     this.addFilterToUrl(url3, 'milestone:"Sprint 1"');
+     this.addFilterToUrl(url3, 'label:"bug"');
+     this.addFilterToUrl(url3, 'label:"priority::high"');
+     console.log('  指派人 + 里程碑（单选） + 多标签:', url3.search);
+    
+    // 场景4：创建人 + 里程碑 + 标签
+    const url4 = new URL('https://gitlab.example.com/boards/123');
+    this.addFilterToUrl(url4, 'author:@author1');
+    this.addFilterToUrl(url4, 'milestone:"Release 2.0"');
+    this.addFilterToUrl(url4, 'label:"feature"');
+    console.log('  创建人 + 里程碑 + 标签:', url4.search);
   }
 }
 
