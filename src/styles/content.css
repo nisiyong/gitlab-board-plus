@@ -381,6 +381,36 @@
   border-radius: 4px;
 }
 
+/* 指派人和创建人组特殊样式 - 整个按钮可点击 */
+.filter-group[data-group-id="assignee"] .filter-item,
+.filter-group[data-group-id="author"] .filter-item {
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-group[data-group-id="assignee"] .filter-item input[type="checkbox"],
+.filter-group[data-group-id="author"] .filter-item input[type="checkbox"] {
+  pointer-events: none; /* 禁用checkbox的点击事件 */
+  cursor: default;
+}
+
+.filter-group[data-group-id="assignee"] .filter-item .item-content,
+.filter-group[data-group-id="author"] .filter-item .item-content {
+  cursor: pointer;
+}
+
+/* 指派人和创建人的悬停效果 */
+.filter-group[data-group-id="assignee"] .filter-item:hover,
+.filter-group[data-group-id="author"] .filter-item:hover {
+  background: #f8f9fa;
+}
+
+.filter-group[data-group-id="assignee"] .filter-item:active,
+.filter-group[data-group-id="author"] .filter-item:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
 /* 标签特殊样式 */
 .filter-group[data-group-id="label"] .filter-item .item-name {
   padding: 2px 6px;
