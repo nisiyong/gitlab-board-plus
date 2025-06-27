@@ -578,6 +578,102 @@ class GitLabUtils {
     }
   }
 
+  // 通过 GraphQL API 获取标签列表
+  static async fetchLabelsFromAPI() {
+    try {
+      const projectId = this.extractProjectId();
+      if (!projectId) {
+        console.warn('❌ Could not extract project ID');
+        return [];
+      }
+
+      const csrfToken = this.getCSRFToken();
+      if (!csrfToken) {
+        console.warn('❌ Could not get CSRF token');
+        return [];
+      }
+
+      // 构建 GraphQL 请求
+      const query = {
+        operationName: "searchLabels",
+        variables: {
+          isProject: true,
+          fullPath: projectId,
+          search: ""
+        },
+        query: `query searchLabels($fullPath: ID!, $search: String, $isProject: Boolean = false) {
+          group(fullPath: $fullPath) @skip(if: $isProject) {
+            id
+            labels(
+              searchTerm: $search
+              includeAncestorGroups: true
+              includeDescendantGroups: true
+            ) {
+              nodes {
+                ...Label
+              }
+            }
+            __typename
+          }
+          project(fullPath: $fullPath) @include(if: $isProject) {
+            id
+            labels(searchTerm: $search, includeAncestorGroups: true) {
+              nodes {
+                ...Label
+              }
+            }
+            __typename
+          }
+        }
+
+        fragment Label on Label {
+          id
+          color
+          textColor
+          title
+          __typename
+        }`
+      };
+
+      // 发送 GraphQL 请求
+      const response = await fetch(`${window.location.origin}/api/graphql`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify([query])
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data[0]?.data?.project?.labels?.nodes) {
+        const labels = data[0].data.project.labels.nodes.map(node => ({
+          id: node.id,
+          title: node.title,
+          color: node.color,
+          textColor: node.textColor,
+          name: node.title // 为了兼容现有代码，添加 name 属性
+        }));
+
+        console.log(`✅ Fetched ${labels.length} labels from API:`, labels);
+        return labels;
+      } else {
+        console.warn('❌ No labels data found in API response');
+        return [];
+      }
+
+    } catch (error) {
+      console.error('❌ Error fetching labels from API:', error);
+      // 如果 API 调用失败，回退到页面提取方法
+      return this.extractLabelsFromPage();
+    }
+  }
+
   // 获取 CSRF Token
   static getCSRFToken() {
     try {

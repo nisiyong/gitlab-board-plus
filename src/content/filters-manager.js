@@ -192,18 +192,18 @@ class FiltersShortcutsManager {
   // 加载标签
   async loadLabels() {
     try {
-      const labels = await GitLabUtils.extractLabelsFromPage();
+      // 使用 GraphQL API 获取标签信息
+      const labels = await GitLabUtils.fetchLabelsFromAPI();
       
       const labelGroup = this.filterGroups.find(g => g.id === 'label');
       if (labelGroup && labels.length > 0) {
         labelGroup.items = labels.map(label => ({
-          id: `label-${label.name}`,
-          name: label.name,
+          id: `label-${label.name || label.title}`,
+          name: label.name || label.title,
           icon: '🏷️',
-          filter: `label:"${label.name}"`,
+          filter: `label:"${label.name || label.title}"`,
           active: false,
-          labelData: label,
-          style: label.color ? `background-color: ${label.color}` : ''
+          labelData: label // 保存完整的标签数据，包含 color 和 textColor
         }));
       }
       
@@ -264,10 +264,58 @@ class FiltersShortcutsManager {
           ${group.loadDynamic ? '<span class="group-loading">⟳</span>' : ''}
         </div>
         <div class="filter-group-items">
-          ${group.items.map(item => this.renderFilterItem(item, group.type)).join('')}
+          ${group.items.map(item => this.renderFilterItem(item, group.id)).join('')}
         </div>
       </div>
     `;
+  }
+
+  // 计算文字颜色的对比度
+  getContrastColor(backgroundColor, providedTextColor) {
+    // 如果提供了文字颜色，直接使用
+    if (providedTextColor) {
+      return providedTextColor;
+    }
+    
+    // 如果没有提供文字颜色，根据背景色计算
+    if (!backgroundColor) {
+      return '#374151';
+    }
+    
+    try {
+      // 处理不同的颜色格式
+      let hex = backgroundColor;
+      
+      // 如果是 #RRGGBB 格式
+      if (hex.startsWith('#')) {
+        hex = hex.substring(1);
+      }
+      
+      // 如果是 3 位十六进制，扩展为 6 位
+      if (hex.length === 3) {
+        hex = hex.split('').map(char => char + char).join('');
+      }
+      
+      // 确保是 6 位十六进制
+      if (hex.length !== 6) {
+        console.warn('Invalid color format:', backgroundColor);
+        return '#374151';
+      }
+      
+      // 解析 RGB 值
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      
+      // 计算相对亮度
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      
+      // 如果背景较亮，使用深色文字；如果背景较暗，使用浅色文字
+      return luminance > 0.5 ? '#1f2937' : '#ffffff';
+    } catch (error) {
+      console.error('Error calculating contrast color:', error);
+      return '#374151';
+    }
   }
 
   // 渲染单个过滤项
@@ -284,6 +332,23 @@ class FiltersShortcutsManager {
       iconHtml = `<span class="item-icon">${item.icon}</span>`;
     }
     
+    // 为标签类型的项目生成特殊样式
+    let itemStyle = '';
+    let itemNameClass = 'item-name';
+          if (groupType === 'label' && item.labelData) {
+        const { color, textColor } = item.labelData;
+        if (color) {
+          // 计算最佳的文字颜色
+          const finalTextColor = this.getContrastColor(color, textColor);
+          
+          // 为标签项目添加背景色和文字颜色
+          itemStyle = `style="background-color: ${color}; color: ${finalTextColor};"`;
+          itemNameClass = 'item-name label-styled';
+          // 不显示标签图标，因为整个项目都有颜色背景了
+          iconHtml = '';
+        }
+      }
+    
     // 根据组类型决定渲染逻辑
     if (groupType === 'assignee' || groupType === 'author') {
       // 指派人和创建人：整个按钮都可点击，统一多选逻辑
@@ -296,7 +361,7 @@ class FiltersShortcutsManager {
           <input type="checkbox" ${item.active ? 'checked' : ''} />
           <div class="item-content">
             ${iconHtml}
-            <span class="item-name">${item.name}</span>
+            <span class="${itemNameClass}" ${itemStyle}>${item.name}</span>
           </div>
         </div>
       `;
@@ -310,7 +375,7 @@ class FiltersShortcutsManager {
           <input type="checkbox" ${item.active ? 'checked' : ''} title="多选模式：勾选此项可与其他选项组合使用" />
           <div class="item-content" title="单选模式：点击此处清除其他所有过滤器，只应用此条件">
             ${iconHtml}
-            <span class="item-name">${item.name}</span>
+            <span class="${itemNameClass}" ${itemStyle}>${item.name}</span>
           </div>
         </div>
       `;
@@ -339,6 +404,79 @@ class FiltersShortcutsManager {
         this.handleGroupToggle(header);
       });
     });
+
+    // 过滤项点击事件
+    const filterItems = this.container.querySelectorAll('.filter-item');
+    filterItems.forEach(item => {
+      const groupType = item.getAttribute('data-group-type');
+      
+      if (groupType === 'assignee' || groupType === 'author') {
+        // 指派人和创建人：整个项目可点击
+        item.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.handleFilterItemClick(item);
+        });
+      } else {
+        // 其他组：区分 checkbox 和 content 区域
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        const content = item.querySelector('.item-content');
+        
+        if (checkbox) {
+          checkbox.addEventListener('change', (e) => {
+            e.stopPropagation();
+            this.handleFilterItemClick(item);
+          });
+        }
+        
+        if (content) {
+          content.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.handleFilterItemSingleClick(item);
+          });
+        }
+      }
+    });
+  }
+
+  // 处理过滤项点击（多选模式）
+  handleFilterItemClick(item) {
+    const filter = item.getAttribute('data-filter');
+    const checkbox = item.querySelector('input[type="checkbox"]');
+    
+    if (item.classList.contains('active')) {
+      // 取消激活
+      item.classList.remove('active');
+      if (checkbox) checkbox.checked = false;
+      this.activeFilters.delete(filter);
+    } else {
+      // 激活
+      item.classList.add('active');
+      if (checkbox) checkbox.checked = true;
+      this.activeFilters.add(filter);
+    }
+    
+    // 应用过滤器
+    this.applyCurrentFilters();
+  }
+
+  // 处理过滤项单击（单选模式，清除其他过滤器）
+  handleFilterItemSingleClick(item) {
+    const filter = item.getAttribute('data-filter');
+    
+    // 清除所有激活状态
+    this.clearAllActiveStates();
+    this.activeFilters.clear();
+    
+    // 激活当前项
+    item.classList.add('active');
+    const checkbox = item.querySelector('input[type="checkbox"]');
+    if (checkbox) checkbox.checked = true;
+    this.activeFilters.add(filter);
+    
+    // 应用过滤器
+    this.applyCurrentFilters();
   }
 
   // 应用当前过滤器
