@@ -692,7 +692,7 @@ class GitLabUtils {
         return [];
       }
 
-      // 构建 GraphQL 请求 - 使用优化后的 issues 查询
+      // 构建 GraphQL 请求 - 使用优化后的 issues 查询，包含里程碑信息
       const query = {
         operationName: "getIssues",
         variables: {
@@ -737,6 +737,11 @@ class GitLabUtils {
                   name
                   username
                   avatarUrl
+                  __typename
+                }
+                milestone {
+                  id
+                  title
                   __typename
                 }
                 __typename
@@ -854,6 +859,164 @@ class GitLabUtils {
       console.log('🔄 Falling back to project members API...');
       // 如果 API 调用失败，回退到原有的成员获取方法
       return this.fetchProjectMembersFromAPI();
+    }
+  }
+
+  // 通过 Issues GraphQL API 获取统计数据（指派人、创建人、里程碑的issue数量）
+  static async fetchIssuesStatistics() {
+    try {
+      console.log('📊 Fetching issues statistics...');
+      
+      const projectId = this.extractProjectId();
+      if (!projectId) {
+        console.warn('❌ Could not extract project ID for statistics');
+        return { assigneeStats: {}, authorStats: {}, milestoneStats: {} };
+      }
+
+      const csrfToken = this.getCSRFToken();
+      if (!csrfToken) {
+        console.warn('❌ Could not get CSRF token for statistics');
+        return { assigneeStats: {}, authorStats: {}, milestoneStats: {} };
+      }
+
+      // 构建 GraphQL 请求 - 获取所有open状态的issues及其相关信息
+      const query = {
+        operationName: "getIssuesForStats",
+        variables: {
+          isProject: true,
+          fullPath: projectId,
+          state: "opened",
+          firstPageSize: 100,
+          types: ["ISSUE"]
+        },
+        query: `query getIssuesForStats($isProject: Boolean = false, $fullPath: ID!, $state: IssuableState, $firstPageSize: Int, $types: [IssueType!]) {
+          project(fullPath: $fullPath) @include(if: $isProject) {
+            id
+            issues(
+              state: $state
+              types: $types
+              first: $firstPageSize
+            ) {
+              pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+                __typename
+              }
+              nodes {
+                id
+                iid
+                title
+                state
+                assignees {
+                  nodes {
+                    id
+                    name
+                    username
+                    avatarUrl
+                    __typename
+                  }
+                  __typename
+                }
+                author {
+                  id
+                  name
+                  username
+                  avatarUrl
+                  __typename
+                }
+                milestone {
+                  id
+                  title
+                  __typename
+                }
+                __typename
+              }
+              __typename
+            }
+            __typename
+          }
+        }`
+      };
+
+      console.log('📤 Sending Issues Statistics GraphQL request...');
+      
+      // 发送 GraphQL 请求
+      const response = await fetch(`${window.location.origin}/api/graphql`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify([query])
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('📥 Issues Statistics API response received');
+      
+      // 检查响应结构
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        console.warn('❌ Invalid response structure from Issues Statistics API:', data);
+        return { assigneeStats: {}, authorStats: {}, milestoneStats: {} };
+      }
+      
+      if (data[0]?.errors) {
+        console.error('❌ GraphQL errors in Issues Statistics API response:', data[0].errors);
+        return { assigneeStats: {}, authorStats: {}, milestoneStats: {} };
+      }
+      
+      if (data[0]?.data?.project?.issues?.nodes) {
+        const issues = data[0].data.project.issues.nodes;
+        console.log(`📋 Processing ${issues.length} issues for statistics`);
+        
+        const assigneeStats = {};
+        const authorStats = {};
+        const milestoneStats = {};
+        
+        // 统计每个用户和里程碑的issue数量
+        issues.forEach(issue => {
+          // 统计创建人
+          if (issue.author && issue.author.username) {
+            const username = issue.author.username;
+            authorStats[username] = (authorStats[username] || 0) + 1;
+          }
+          
+          // 统计指派人
+          if (issue.assignees && issue.assignees.nodes && Array.isArray(issue.assignees.nodes)) {
+            issue.assignees.nodes.forEach(assignee => {
+              if (assignee && assignee.username) {
+                const username = assignee.username;
+                assigneeStats[username] = (assigneeStats[username] || 0) + 1;
+              }
+            });
+          }
+          
+          // 统计里程碑
+          if (issue.milestone && issue.milestone.title) {
+            const milestoneTitle = issue.milestone.title;
+            milestoneStats[milestoneTitle] = (milestoneStats[milestoneTitle] || 0) + 1;
+          }
+        });
+        
+        console.log('📊 Statistics calculated:');
+        console.log('  Assignee stats:', assigneeStats);
+        console.log('  Author stats:', authorStats);
+        console.log('  Milestone stats:', milestoneStats);
+        
+        return { assigneeStats, authorStats, milestoneStats };
+      } else {
+        console.warn('❌ No issues data found in statistics API response structure');
+        return { assigneeStats: {}, authorStats: {}, milestoneStats: {} };
+      }
+
+    } catch (error) {
+      console.error('❌ Error fetching issues statistics:', error);
+      return { assigneeStats: {}, authorStats: {}, milestoneStats: {} };
     }
   }
 

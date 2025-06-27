@@ -361,6 +361,14 @@
   text-overflow: ellipsis;
 }
 
+/* 统计数量样式 */
+.item-count {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: normal;
+  margin-left: 4px;
+}
+
 /* 标签组的特殊布局 */
 .filter-group[data-group-id="label"] .filter-item .item-name {
   flex: none; /* 不要拉伸，让宽度适应内容 */

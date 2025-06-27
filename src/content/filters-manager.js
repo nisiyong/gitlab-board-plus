@@ -106,6 +106,10 @@ class FiltersShortcutsManager {
     try {
       console.log('🔄 Loading dynamic data for filters...');
       
+      // 首先获取统计数据
+      const statistics = await GitLabUtils.fetchIssuesStatistics();
+      this.statistics = statistics;
+      
       // 并行加载各种数据
       await Promise.all([
         this.loadProjectMembers(),
@@ -133,17 +137,38 @@ class FiltersShortcutsManager {
       const assigneeGroup = this.filterGroups.find(g => g.id === 'assignee');
       const authorGroup = this.filterGroups.find(g => g.id === 'author');
       
+      // 获取统计数据
+      const assigneeStats = this.statistics?.assigneeStats || {};
+      const authorStats = this.statistics?.authorStats || {};
+      
+      // 更新"我"的统计数量
+      if (assigneeGroup && this.currentUser?.username) {
+        const myAssigneeItem = assigneeGroup.items.find(item => item.isDefault);
+        if (myAssigneeItem) {
+          myAssigneeItem.count = assigneeStats[this.currentUser.username] || 0;
+        }
+      }
+      
+      if (authorGroup && this.currentUser?.username) {
+        const myAuthorItem = authorGroup.items.find(item => item.isDefault);
+        if (myAuthorItem) {
+          myAuthorItem.count = authorStats[this.currentUser.username] || 0;
+        }
+      }
+      
       if (assigneeGroup && users.length > 0) {
         // 添加指派人到指派人组（除了默认的"我"）
         const assignees = users.filter(user => user.isAssignee && user.username !== this.currentUser?.username);
         assignees.forEach(user => {
+          const count = assigneeStats[user.username] || 0;
           assigneeGroup.items.push({
             id: `assignee-${user.username}`,
             name: user.username, // 直接使用 username
             icon: null, // 不使用 emoji，使用头像
             filter: `assignee:@${user.username}`,
             active: false,
-            userData: user
+            userData: user,
+            count: count
           });
         });
         console.log(`✅ Added ${assignees.length} assignees to filter group`);
@@ -153,13 +178,15 @@ class FiltersShortcutsManager {
         // 添加创建人到创建人组（除了默认的"我"）
         const authors = users.filter(user => user.isAuthor && user.username !== this.currentUser?.username);
         authors.forEach(user => {
+          const count = authorStats[user.username] || 0;
           authorGroup.items.push({
             id: `author-${user.username}`,
             name: user.username, // 直接使用 username
             icon: null, // 不使用 emoji，使用头像
             filter: `author:@${user.username}`,
             active: false,
-            userData: user
+            userData: user,
+            count: count
           });
         });
         console.log(`✅ Added ${authors.length} authors to filter group`);
@@ -178,19 +205,26 @@ class FiltersShortcutsManager {
       
       const milestoneGroup = this.filterGroups.find(g => g.id === 'milestone');
       if (milestoneGroup && milestones.length > 0) {
+        // 获取里程碑统计数据
+        const milestoneStats = this.statistics?.milestoneStats || {};
+        
         // 按照名称升序排序
         const sortedMilestones = milestones.sort((a, b) => 
           a.title.localeCompare(b.title, 'zh-CN', { numeric: true, sensitivity: 'base' })
         );
         
-        milestoneGroup.items = sortedMilestones.map(milestone => ({
-          id: `milestone-${milestone.id}`,
-          name: milestone.title,
-          icon: '🎯',
-          filter: `milestone_title:${milestone.title}`,
-          active: false,
-          milestoneData: milestone
-        }));
+        milestoneGroup.items = sortedMilestones.map(milestone => {
+          const count = milestoneStats[milestone.title] || 0;
+          return {
+            id: `milestone-${milestone.id}`,
+            name: milestone.title,
+            icon: '🎯',
+            filter: `milestone_title:${milestone.title}`,
+            active: false,
+            milestoneData: milestone,
+            count: count
+          };
+        });
       }
       
     } catch (error) {
@@ -358,6 +392,12 @@ class FiltersShortcutsManager {
         }
       }
     
+    // 生成统计数量显示
+    let countHtml = '';
+    if (typeof item.count === 'number') {
+      countHtml = ` <span class="item-count">(${item.count})</span>`;
+    }
+    
     // 根据组类型设置不同的提示和交互模式
     const isRadioGroup = groupType === 'assignee' || groupType === 'author' || groupType === 'milestone';
     const inputType = isRadioGroup ? 'radio' : 'checkbox';
@@ -373,7 +413,7 @@ class FiltersShortcutsManager {
         <input type="${inputType}" ${radioName ? `name="${radioName}"` : ''} ${item.active ? 'checked' : ''} />
         <div class="item-content">
           ${iconHtml}
-          <span class="${itemNameClass}" ${itemStyle}>${item.name}</span>
+          <span class="${itemNameClass}" ${itemStyle}>${item.name}${countHtml}</span>
         </div>
       </div>
     `;
