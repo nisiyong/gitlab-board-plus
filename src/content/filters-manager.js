@@ -283,43 +283,41 @@ class FiltersShortcutsManager {
       iconHtml = `<span class="item-icon">${item.icon}</span>`;
     }
     
-    return `
-      <div class="filter-item ${activeClass}" 
-           data-item-id="${item.id}" 
-           data-filter="${item.filter}"
-           data-group-type="${groupType}">
-        <input type="checkbox" ${item.active ? 'checked' : ''} title="多选模式：勾选此项可与其他选项组合使用" />
-        <div class="item-content" title="单选模式：点击此处清除其他所有过滤器，只应用此条件">
-          ${iconHtml}
-          <span class="item-name">${item.name}</span>
+    // 根据组类型决定渲染逻辑
+    if (groupType === 'assignee' || groupType === 'author') {
+      // 指派人和创建人：整个按钮都可点击，统一多选逻辑
+      return `
+        <div class="filter-item ${activeClass}" 
+             data-item-id="${item.id}" 
+             data-filter="${item.filter}"
+             data-group-type="${groupType}"
+             title="点击切换选中状态，支持多选">
+          <input type="checkbox" ${item.active ? 'checked' : ''} />
+          <div class="item-content">
+            ${iconHtml}
+            <span class="item-name">${item.name}</span>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    } else {
+      // 其他组：保持原有的单选/多选区分逻辑
+      return `
+        <div class="filter-item ${activeClass}" 
+             data-item-id="${item.id}" 
+             data-filter="${item.filter}"
+             data-group-type="${groupType}">
+          <input type="checkbox" ${item.active ? 'checked' : ''} title="多选模式：勾选此项可与其他选项组合使用" />
+          <div class="item-content" title="单选模式：点击此处清除其他所有过滤器，只应用此条件">
+            ${iconHtml}
+            <span class="item-name">${item.name}</span>
+          </div>
+        </div>
+      `;
+    }
   }
 
   // 绑定事件
   bindEvents() {
-    // 单选模式：点击按钮内容区域
-    const itemContents = this.container.querySelectorAll('.item-content');
-    itemContents.forEach(content => {
-      content.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const item = content.closest('.filter-item');
-        this.handleFilterItemSingleClick(item, e);
-      });
-    });
-
-    // 多选模式：点击checkbox
-    const checkboxes = this.container.querySelectorAll('.filter-item input[type="checkbox"]');
-    checkboxes.forEach(checkbox => {
-      checkbox.addEventListener('click', (e) => {
-        // 阻止事件冒泡到父元素
-        e.stopPropagation();
-        const item = checkbox.closest('.filter-item');
-        this.handleFilterItemCheckboxClick(item, checkbox, e);
-      });
-    });
-
     // 重置按钮事件（现在在搜索区域）
     const resetBtn = this.container.querySelector('.shortcuts-reset-btn');
     if (resetBtn) {
@@ -339,82 +337,6 @@ class FiltersShortcutsManager {
         }
         this.handleGroupToggle(header);
       });
-    });
-  }
-
-  // 处理过滤项单选点击（点击按钮文字/图标区域）
-  handleFilterItemSingleClick(item, event) {
-    const itemId = item.getAttribute('data-item-id');
-    const filter = item.getAttribute('data-filter');
-    
-    // 所有直接点击都是单选模式：清除所有选项，激活当前选项
-    this.handleSingleSelection(item, itemId, filter);
-    
-    // 应用过滤
-    this.applyCurrentFilters();
-  }
-
-  // 处理checkbox点击（多选模式）
-  handleFilterItemCheckboxClick(item, checkbox, event) {
-    const itemId = item.getAttribute('data-item-id');
-    const filter = item.getAttribute('data-filter');
-    
-    // 多选模式：切换当前选项状态
-    this.handleMultipleSelection(item, itemId, filter);
-    
-    // 应用过滤
-    this.applyCurrentFilters();
-  }
-
-  // 处理单选
-  handleSingleSelection(item, itemId, filter) {
-    // 清除所有激活状态
-    this.clearAllActiveStates();
-    
-    // 激活当前项
-    item.classList.add('active');
-    
-    // 勾选当前项的checkbox
-    const checkbox = item.querySelector('input[type="checkbox"]');
-    if (checkbox) {
-      checkbox.checked = true;
-    }
-    
-    // 更新活跃过滤器集合
-    this.activeFilters.clear();
-    if (filter) {
-      this.activeFilters.add(filter);
-    }
-  }
-
-  // 处理多选
-  handleMultipleSelection(item, itemId, filter) {
-    const checkbox = item.querySelector('input[type="checkbox"]');
-    const isActive = item.classList.contains('active');
-    
-    if (isActive) {
-      // 取消激活
-      item.classList.remove('active');
-      if (checkbox) checkbox.checked = false;
-      this.activeFilters.delete(filter);
-    } else {
-      // 激活当前项
-      item.classList.add('active');
-      if (checkbox) checkbox.checked = true;
-      if (filter) {
-        this.activeFilters.add(filter);
-      }
-    }
-  }
-
-  // 清除所有激活状态
-  clearAllActiveStates() {
-    // 清除顶级选项和分组选项的激活状态
-    const activeItems = this.container.querySelectorAll('.filter-item.active');
-    activeItems.forEach(item => {
-      item.classList.remove('active');
-      const checkbox = item.querySelector('input[type="checkbox"]');
-      if (checkbox) checkbox.checked = false;
     });
   }
 
@@ -563,6 +485,17 @@ class FiltersShortcutsManager {
     } catch (error) {
       console.error('❌ Error restoring group collapsed states:', error);
     }
+  }
+
+  // 清除所有激活状态
+  clearAllActiveStates() {
+    // 清除顶级选项和分组选项的激活状态
+    const activeItems = this.container.querySelectorAll('.filter-item.active');
+    activeItems.forEach(item => {
+      item.classList.remove('active');
+      const checkbox = item.querySelector('input[type="checkbox"]');
+      if (checkbox) checkbox.checked = false;
+    });
   }
 
   // 添加搜索功能
