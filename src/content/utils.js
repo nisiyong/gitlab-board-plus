@@ -476,6 +476,108 @@ class GitLabUtils {
     }
   }
 
+  // 通过 GraphQL API 获取里程碑列表
+  static async fetchMilestonesFromAPI() {
+    try {
+      const projectId = this.extractProjectId();
+      if (!projectId) {
+        console.warn('❌ Could not extract project ID');
+        return [];
+      }
+
+      const csrfToken = this.getCSRFToken();
+      if (!csrfToken) {
+        console.warn('❌ Could not get CSRF token');
+        return [];
+      }
+
+      // 构建 GraphQL 请求
+      const query = {
+        operationName: "searchMilestones",
+        variables: {
+          isProject: true,
+          fullPath: projectId,
+          search: ""
+        },
+        query: `query searchMilestones($fullPath: ID!, $search: String, $isProject: Boolean = false) {
+          group(fullPath: $fullPath) @skip(if: $isProject) {
+            id
+            milestones(
+              searchTitle: $search
+              includeAncestors: true
+              includeDescendants: true
+              sort: EXPIRED_LAST_DUE_DATE_ASC
+              state: active
+            ) {
+              nodes {
+                ...Milestone
+                __typename
+              }
+              __typename
+            }
+            __typename
+          }
+          project(fullPath: $fullPath) @include(if: $isProject) {
+            id
+            milestones(
+              searchTitle: $search
+              includeAncestors: true
+              sort: EXPIRED_LAST_DUE_DATE_ASC
+              state: active
+            ) {
+              nodes {
+                ...Milestone
+                __typename
+              }
+              __typename
+            }
+            __typename
+          }
+        }
+
+        fragment Milestone on Milestone {
+          id
+          title
+          __typename
+        }`
+      };
+
+      // 发送 GraphQL 请求
+      const response = await fetch(`${window.location.origin}/api/graphql`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify([query])
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data[0]?.data?.project?.milestones?.nodes) {
+        const milestones = data[0].data.project.milestones.nodes.map(node => ({
+          id: node.id,
+          title: node.title
+        }));
+
+        console.log(`✅ Fetched ${milestones.length} milestones from API:`, milestones);
+        return milestones;
+      } else {
+        console.warn('❌ No milestones data found in API response');
+        return [];
+      }
+
+    } catch (error) {
+      console.error('❌ Error fetching milestones from API:', error);
+      // 如果 API 调用失败，回退到页面提取方法
+      return this.extractMilestonesFromPage();
+    }
+  }
+
   // 获取 CSRF Token
   static getCSRFToken() {
     try {

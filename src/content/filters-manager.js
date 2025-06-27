@@ -169,7 +169,8 @@ class FiltersShortcutsManager {
   // 加载里程碑
   async loadMilestones() {
     try {
-      const milestones = await GitLabUtils.extractMilestonesFromPage();
+      // 使用 GraphQL API 获取里程碑信息
+      const milestones = await GitLabUtils.fetchMilestonesFromAPI();
       
       const milestoneGroup = this.filterGroups.find(g => g.id === 'milestone');
       if (milestoneGroup && milestones.length > 0) {
