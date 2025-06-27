@@ -104,6 +104,8 @@ class FiltersShortcutsManager {
   // 加载动态数据
   async loadDynamicData() {
     try {
+      console.log('🔄 Loading dynamic data for filters...');
+      
       // 并行加载各种数据
       await Promise.all([
         this.loadProjectMembers(),
@@ -114,6 +116,8 @@ class FiltersShortcutsManager {
       // 数据加载完成后重新渲染
       this.render();
       
+      console.log('✅ Dynamic data loading completed');
+      
     } catch (error) {
       console.error('❌ Error loading dynamic data:', error);
     }
@@ -122,43 +126,43 @@ class FiltersShortcutsManager {
   // 加载项目成员
   async loadProjectMembers() {
     try {
-      // 使用 GraphQL API 获取成员信息
-      const members = await GitLabUtils.fetchProjectMembersFromAPI();
+      // 使用新的 Issues GraphQL API 获取用户信息（创建人和指派人）
+      const users = await GitLabUtils.fetchUsersFromIssuesAPI();
       
       // 更新指派人和创建人组
       const assigneeGroup = this.filterGroups.find(g => g.id === 'assignee');
       const authorGroup = this.filterGroups.find(g => g.id === 'author');
       
-      if (assigneeGroup && members.length > 0) {
-        // 添加其他成员到指派人组（除了默认的"我"）
-        members.forEach(member => {
-          if (member.username !== this.currentUser?.username) {
-            assigneeGroup.items.push({
-              id: `assignee-${member.username}`,
-              name: member.username, // 直接使用 username
-              icon: null, // 不使用 emoji，使用头像
-              filter: `assignee:@${member.username}`,
-              active: false,
-              userData: member
-            });
-          }
+      if (assigneeGroup && users.length > 0) {
+        // 添加指派人到指派人组（除了默认的"我"）
+        const assignees = users.filter(user => user.isAssignee && user.username !== this.currentUser?.username);
+        assignees.forEach(user => {
+          assigneeGroup.items.push({
+            id: `assignee-${user.username}`,
+            name: user.username, // 直接使用 username
+            icon: null, // 不使用 emoji，使用头像
+            filter: `assignee:@${user.username}`,
+            active: false,
+            userData: user
+          });
         });
+        console.log(`✅ Added ${assignees.length} assignees to filter group`);
       }
       
-      if (authorGroup && members.length > 0) {
-        // 添加其他成员到创建人组（除了默认的"我"）
-        members.forEach(member => {
-          if (member.username !== this.currentUser?.username) {
-            authorGroup.items.push({
-              id: `author-${member.username}`,
-              name: member.username, // 直接使用 username
-              icon: null, // 不使用 emoji，使用头像
-              filter: `author:@${member.username}`,
-              active: false,
-              userData: member
-            });
-          }
+      if (authorGroup && users.length > 0) {
+        // 添加创建人到创建人组（除了默认的"我"）
+        const authors = users.filter(user => user.isAuthor && user.username !== this.currentUser?.username);
+        authors.forEach(user => {
+          authorGroup.items.push({
+            id: `author-${user.username}`,
+            name: user.username, // 直接使用 username
+            icon: null, // 不使用 emoji，使用头像
+            filter: `author:@${user.username}`,
+            active: false,
+            userData: user
+          });
         });
+        console.log(`✅ Added ${authors.length} authors to filter group`);
       }
       
     } catch (error) {

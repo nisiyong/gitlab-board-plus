@@ -187,3 +187,78 @@ https://{{your-gitlab-url}}/api/graphql
   }
 ]
 ```
+
+# 获取 Issue 列表
+
+## 请求体
+
+```json
+[
+  {
+    "operationName": "getIssues",
+    "variables": {
+      "isProject": true,
+      "fullPath": "{{group}}/{{project}}",
+      "state": "opened",
+      "firstPageSize": 100,
+      "types": [
+        "ISSUE"
+      ]
+    },
+    "query": "query getIssues($isProject: Boolean = false, $fullPath: ID!, $state: IssuableState, $firstPageSize: Int, $types: [IssueType!]) {\n  project(fullPath: $fullPath) @include(if: $isProject) {\n    id\n    issues(\n      state: $state\n      types: $types\n      first: $firstPageSize\n    ) {\n      pageInfo {\n        hasNextPage\n        hasPreviousPage\n        startCursor\n        endCursor\n        __typename\n      }\n      nodes {\n        id\n        iid\n        title\n        state\n        assignees {\n          nodes {\n            id\n            name\n            username\n            avatarUrl\n            __typename\n          }\n          __typename\n        }\n        author {\n          id\n          name\n          username\n          avatarUrl\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
+  }
+]
+```
+
+## 响应体
+
+```json
+[
+  {
+    "data": {
+      "project": {
+        "id": "gid://gitlab/Project/{{project-id}}",
+        "issues": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "hasPreviousPage": false,
+            "startCursor": "{{start-cursor}}",
+            "endCursor": "{{end-cursor}}",
+            "__typename": "PageInfo"
+          },
+          "nodes": [
+            {
+              "id": "gid://gitlab/Issue/{{issue-id}}",
+              "iid": "{{issue-iid}}",
+              "title": "{{issue-title}}",
+              "state": "opened",
+              "assignees": {
+                "nodes": [
+                  {
+                    "id": "gid://gitlab/User/{{assignee-user-id}}",
+                    "name": "{{assignee-name}}",
+                    "username": "{{assignee-username}}",
+                    "avatarUrl": "{{assignee-avatar-url}}",
+                    "__typename": "UserCore"
+                  }
+                ],
+                "__typename": "UserCoreConnection"
+              },
+              "author": {
+                "id": "gid://gitlab/User/{{author-user-id}}",
+                "name": "{{author-name}}",
+                "username": "{{author-username}}",
+                "avatarUrl": "{{author-avatar-url}}",
+                "__typename": "UserCore"
+              },
+              "__typename": "Issue"
+            }
+          ],
+          "__typename": "IssueConnection"
+        },
+        "__typename": "Project"
+      }
+    }
+  }
+]
+```

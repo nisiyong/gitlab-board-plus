@@ -674,6 +674,189 @@ class GitLabUtils {
     }
   }
 
+  // 通过 Issues GraphQL API 获取用户列表（创建人和指派人）
+  static async fetchUsersFromIssuesAPI() {
+    try {
+      console.log('🔍 Fetching users from Issues API...');
+      
+      const projectId = this.extractProjectId();
+      if (!projectId) {
+        console.warn('❌ Could not extract project ID for Issues API');
+        return [];
+      }
+      console.log(`📁 Project ID: ${projectId}`);
+
+      const csrfToken = this.getCSRFToken();
+      if (!csrfToken) {
+        console.warn('❌ Could not get CSRF token for Issues API');
+        return [];
+      }
+
+      // 构建 GraphQL 请求 - 使用优化后的 issues 查询
+      const query = {
+        operationName: "getIssues",
+        variables: {
+          isProject: true,
+          fullPath: projectId,
+          state: "opened",
+          firstPageSize: 100,
+          types: ["ISSUE"]
+        },
+        query: `query getIssues($isProject: Boolean = false, $fullPath: ID!, $state: IssuableState, $firstPageSize: Int, $types: [IssueType!]) {
+          project(fullPath: $fullPath) @include(if: $isProject) {
+            id
+            issues(
+              state: $state
+              types: $types
+              first: $firstPageSize
+            ) {
+              pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
+                __typename
+              }
+              nodes {
+                id
+                iid
+                title
+                state
+                assignees {
+                  nodes {
+                    id
+                    name
+                    username
+                    avatarUrl
+                    __typename
+                  }
+                  __typename
+                }
+                author {
+                  id
+                  name
+                  username
+                  avatarUrl
+                  __typename
+                }
+                __typename
+              }
+              __typename
+            }
+            __typename
+          }
+        }`
+      };
+
+      console.log('📤 Sending Issues GraphQL request...');
+      
+      // 发送 GraphQL 请求
+      const response = await fetch(`${window.location.origin}/api/graphql`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify([query])
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('📥 Issues API response received');
+      
+      // 检查响应结构
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        console.warn('❌ Invalid response structure from Issues API:', data);
+        return [];
+      }
+      
+      if (data[0]?.errors) {
+        console.error('❌ GraphQL errors in Issues API response:', data[0].errors);
+        return [];
+      }
+      
+      if (data[0]?.data?.project?.issues?.nodes) {
+        const issues = data[0].data.project.issues.nodes;
+        console.log(`📋 Found ${issues.length} issues to process`);
+        
+        const usersMap = new Map();
+        let authorCount = 0;
+        let assigneeCount = 0;
+        
+        // 从所有 issue 中提取用户信息
+        issues.forEach((issue, index) => {
+          // 添加创建人
+          if (issue.author && issue.author.username) {
+            const author = issue.author;
+            if (!usersMap.has(author.username)) {
+              usersMap.set(author.username, {
+                id: author.id,
+                username: author.username,
+                name: author.name || author.username,
+                avatarUrl: author.avatarUrl,
+                isAuthor: true,
+                isAssignee: false
+              });
+              authorCount++;
+            } else {
+              // 如果用户已存在，标记为创建人
+              usersMap.get(author.username).isAuthor = true;
+            }
+          }
+          
+          // 添加指派人
+          if (issue.assignees && issue.assignees.nodes && Array.isArray(issue.assignees.nodes)) {
+            issue.assignees.nodes.forEach(assignee => {
+              if (assignee && assignee.username) {
+                if (!usersMap.has(assignee.username)) {
+                  usersMap.set(assignee.username, {
+                    id: assignee.id,
+                    username: assignee.username,
+                    name: assignee.name || assignee.username,
+                    avatarUrl: assignee.avatarUrl,
+                    isAuthor: false,
+                    isAssignee: true
+                  });
+                  assigneeCount++;
+                } else {
+                  // 如果用户已存在，标记为指派人
+                  usersMap.get(assignee.username).isAssignee = true;
+                }
+              }
+            });
+          }
+        });
+
+        const users = Array.from(usersMap.values());
+        const uniqueAuthors = users.filter(u => u.isAuthor).length;
+        const uniqueAssignees = users.filter(u => u.isAssignee).length;
+        const bothRoles = users.filter(u => u.isAuthor && u.isAssignee).length;
+        
+        console.log(`✅ Successfully processed ${users.length} unique users from Issues API`);
+        console.log(`📊 User statistics:
+  - Unique authors: ${uniqueAuthors}
+  - Unique assignees: ${uniqueAssignees}
+  - Users with both roles: ${bothRoles}
+  - Total processed issues: ${issues.length}`);
+        
+        return users;
+      } else {
+        console.warn('❌ No issues data found in API response structure');
+        console.log('Response structure:', data[0]?.data);
+        return [];
+      }
+
+    } catch (error) {
+      console.error('❌ Error fetching users from Issues API:', error);
+      console.log('🔄 Falling back to project members API...');
+      // 如果 API 调用失败，回退到原有的成员获取方法
+      return this.fetchProjectMembersFromAPI();
+    }
+  }
+
   // 获取 CSRF Token
   static getCSRFToken() {
     try {
@@ -703,6 +886,31 @@ class GitLabUtils {
     } catch (error) {
       console.error('❌ Error getting CSRF token:', error);
       return null;
+    }
+  }
+  // 测试函数 - 在浏览器控制台中调用来测试新的 Issues API
+  static async testIssuesAPI() {
+    console.log('🧪 Testing Issues API...');
+    try {
+      const users = await this.fetchUsersFromIssuesAPI();
+      console.log('✅ Issues API test completed');
+      console.table(users);
+      
+      // 分析数据
+      const authors = users.filter(u => u.isAuthor);
+      const assignees = users.filter(u => u.isAssignee);
+      const both = users.filter(u => u.isAuthor && u.isAssignee);
+      
+      console.log(`📊 Summary:
+- Total users: ${users.length}
+- Authors only: ${authors.filter(u => !u.isAssignee).length}
+- Assignees only: ${assignees.filter(u => !u.isAuthor).length}
+- Both author and assignee: ${both.length}`);
+      
+      return users;
+    } catch (error) {
+      console.error('❌ Issues API test failed:', error);
+      return [];
     }
   }
 }
