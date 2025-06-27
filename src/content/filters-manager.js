@@ -174,7 +174,12 @@ class FiltersShortcutsManager {
       
       const milestoneGroup = this.filterGroups.find(g => g.id === 'milestone');
       if (milestoneGroup && milestones.length > 0) {
-        milestoneGroup.items = milestones.map(milestone => ({
+        // 按照名称升序排序
+        const sortedMilestones = milestones.sort((a, b) => 
+          a.title.localeCompare(b.title, 'zh-CN', { numeric: true, sensitivity: 'base' })
+        );
+        
+        milestoneGroup.items = sortedMilestones.map(milestone => ({
           id: `milestone-${milestone.id}`,
           name: milestone.title,
           icon: '🎯',
@@ -349,37 +354,20 @@ class FiltersShortcutsManager {
         }
       }
     
-    // 根据组类型决定渲染逻辑
-    if (groupType === 'assignee' || groupType === 'author') {
-      // 指派人和创建人：整个按钮都可点击，统一多选逻辑
-      return `
-        <div class="filter-item ${activeClass}" 
-             data-item-id="${item.id}" 
-             data-filter="${item.filter}"
-             data-group-type="${groupType}"
-             title="点击切换选中状态，支持多选">
-          <input type="checkbox" ${item.active ? 'checked' : ''} />
-          <div class="item-content">
-            ${iconHtml}
-            <span class="${itemNameClass}" ${itemStyle}>${item.name}</span>
-          </div>
+    // 所有组都使用统一的多选逻辑：整个按钮都可点击
+    return `
+      <div class="filter-item ${activeClass}" 
+           data-item-id="${item.id}" 
+           data-filter="${item.filter}"
+           data-group-type="${groupType}"
+           title="点击切换选中状态，支持多选">
+        <input type="checkbox" ${item.active ? 'checked' : ''} />
+        <div class="item-content">
+          ${iconHtml}
+          <span class="${itemNameClass}" ${itemStyle}>${item.name}</span>
         </div>
-      `;
-    } else {
-      // 其他组：保持原有的单选/多选区分逻辑
-      return `
-        <div class="filter-item ${activeClass}" 
-             data-item-id="${item.id}" 
-             data-filter="${item.filter}"
-             data-group-type="${groupType}">
-          <input type="checkbox" ${item.active ? 'checked' : ''} title="多选模式：勾选此项可与其他选项组合使用" />
-          <div class="item-content" title="单选模式：点击此处清除其他所有过滤器，只应用此条件">
-            ${iconHtml}
-            <span class="${itemNameClass}" ${itemStyle}>${item.name}</span>
-          </div>
-        </div>
-      `;
-    }
+      </div>
+    `;
   }
 
   // 绑定事件
@@ -405,38 +393,15 @@ class FiltersShortcutsManager {
       });
     });
 
-    // 过滤项点击事件
+    // 过滤项点击事件 - 所有组都使用统一的多选逻辑
     const filterItems = this.container.querySelectorAll('.filter-item');
     filterItems.forEach(item => {
-      const groupType = item.getAttribute('data-group-type');
-      
-      if (groupType === 'assignee' || groupType === 'author') {
-        // 指派人和创建人：整个项目可点击
-        item.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          this.handleFilterItemClick(item);
-        });
-      } else {
-        // 其他组：区分 checkbox 和 content 区域
-        const checkbox = item.querySelector('input[type="checkbox"]');
-        const content = item.querySelector('.item-content');
-        
-        if (checkbox) {
-          checkbox.addEventListener('change', (e) => {
-            e.stopPropagation();
-            this.handleFilterItemClick(item);
-          });
-        }
-        
-        if (content) {
-          content.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.handleFilterItemSingleClick(item);
-          });
-        }
-      }
+      // 所有组：整个项目可点击，支持多选
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleFilterItemClick(item);
+      });
     });
   }
 
@@ -461,23 +426,7 @@ class FiltersShortcutsManager {
     this.applyCurrentFilters();
   }
 
-  // 处理过滤项单击（单选模式，清除其他过滤器）
-  handleFilterItemSingleClick(item) {
-    const filter = item.getAttribute('data-filter');
-    
-    // 清除所有激活状态
-    this.clearAllActiveStates();
-    this.activeFilters.clear();
-    
-    // 激活当前项
-    item.classList.add('active');
-    const checkbox = item.querySelector('input[type="checkbox"]');
-    if (checkbox) checkbox.checked = true;
-    this.activeFilters.add(filter);
-    
-    // 应用过滤器
-    this.applyCurrentFilters();
-  }
+
 
   // 应用当前过滤器
   applyCurrentFilters() {
