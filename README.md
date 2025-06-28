@@ -1,35 +1,26 @@
 # GitLab Board Plus
 
-一个增强 GitLab Board 管理功能的 Chrome 插件，提供更好的项目管理体验。
+一个增强 GitLab Board 管理功能的 Chrome 插件，让项目管理更高效。
 
-## 功能特性
+## ✨ 主要功能
 
-### 🚀 Board 增强功能
-- **全新界面布局**: 采用现代化的三层结构设计
-  - 顶部 Tabs: Board 选择器从下拉框改为横向标签页
-  - 左侧过滤面板: 按人员、标签、里程碑等维度快速过滤
-  - 右侧内容区: 搜索栏在上，Board 列表在下
-- **智能过滤系统**: 多维度过滤支持，实时统计计数
-- **可折叠界面**: 左侧面板支持折叠，节省屏幕空间
-- **实时统计**: 显示 Board 上的 Issues 总数、已分配数量、逾期数量
-- **拖拽增强**: 改进的拖拽视觉反馈和动画效果
-- **视觉提示**: 高优先级、逾期、分配给我的 Issues 的特殊视觉标识
-- **响应式设计**: 适配不同屏幕尺寸，支持移动端查看
+- **🎯 智能过滤**: 按人员、标签、里程碑等快速过滤 Issues
+- **📊 实时统计**: 显示 Issues 总数、已分配数量、逾期数量
+- **🎨 界面优化**: 现代化三层布局，左侧过滤面板，右侧内容区
+- **⚡ 快捷操作**: 无需配置 Token，直接使用 GitLab 页面认证
+- **📱 响应式设计**: 支持不同屏幕尺寸，移动端友好
 
-### 🎯 快捷过滤功能
-- **快速过滤**: 直接在 GitLab Board 页面上使用快捷过滤功能
-- **多维度过滤**: 支持按里程碑、指派人、创建人、标签进行过滤
-- **无需额外配置**: 直接使用 GitLab 页面的认证，无需配置 Access Token
+## 🚀 快速开始
 
-## 安装使用
+### 1. 安装插件
 
-### 1. 下载插件
 ```bash
+# 下载源码
 git clone https://github.com/your-username/gitlab-board-plus.git
-cd gitlab-board-plus
 ```
 
 ### 2. 加载到 Chrome
+
 1. 打开 Chrome 浏览器
 2. 访问 `chrome://extensions/`
 3. 开启"开发者模式"
@@ -37,110 +28,50 @@ cd gitlab-board-plus
 5. 选择项目文件夹
 
 ### 3. 配置 GitLab
-1. 点击插件图标打开弹窗
-2. 点击设置按钮（⚙️）
-3. 填写你的 GitLab URL（例如：https://gitlab.example.com）
-4. 点击"测试连接"验证配置
+
+1. 点击插件图标 🧩
+2. 点击设置按钮 ⚙️
+3. 填写你的 GitLab URL（如：`https://gitlab.example.com`）
+4. 点击"测试连接"验证
 5. 保存设置
 
-### 4. 使用增强功能
+### 4. 开始使用
+
 1. 访问任何 GitLab Board 页面
-2. 插件会自动检测并激活增强功能
-3. 在左侧面板使用快捷过滤功能
+2. 插件自动激活增强功能
+3. 使用左侧面板进行快捷过滤
 
-## 支持的 GitLab 版本
-- GitLab.com
-- GitLab 自托管实例（版本 13.0+）
-- GitLab CE/EE
+## 💡 使用技巧
 
-## 项目结构
+- **快速过滤**: 点击左侧过滤选项，实时筛选 Issues
+- **折叠面板**: 点击左侧面板顶部按钮可折叠，节省空间
+- **视觉标识**: 高优先级、逾期、分配给我的 Issues 有特殊标记
+- **统计信息**: 顶部显示当前过滤条件下的 Issues 统计
 
-```
-gitlab-board-plus/
-├── manifest.json              # Chrome 插件配置
-├── package.json              # 项目依赖
-├── README.md                 # 项目说明
-├── 
-├── src/
-│   ├── background.js         # 后台脚本（配置管理）
-│   ├── content/              # 内容脚本
-│   │   ├── index.js         # 主入口
-│   │   ├── board-enhancer.js # Board 增强功能
-│   │   ├── filters-manager.js # 过滤管理器
-│   │   ├── utils.js         # 工具函数
-│   │   └── content-main.js  # 主要内容脚本
-│   ├── popup/
-│   │   ├── popup.html       # 弹窗页面
-│   │   ├── popup.js         # 弹窗逻辑
-│   │   └── popup.css        # 弹窗样式
-│   └── styles/
-│       └── content.css      # 页面注入样式
-└── icons/                   # 插件图标
-    ├── icon16.png
-    ├── icon32.png
-    ├── icon48.png
-    └── icon128.png
-```
+## 🔧 支持环境
 
-## 开发指南
+- ✅ GitLab.com
+- ✅ GitLab 自托管实例（13.0+）
+- ✅ GitLab CE/EE
 
-### 本地开发
-1. 修改代码后，在 `chrome://extensions/` 页面点击刷新按钮
-2. 重新加载 GitLab 页面查看效果
+## ❓ 常见问题
 
-### 构建发布
-```bash
-npm run package
-```
-这将创建一个 `gitlab-board-plus.zip` 文件，可以上传到 Chrome Web Store。
+**Q: 为什么不显示增强功能？**
+A: 确保已正确配置 GitLab URL，并刷新页面
 
-### 技术实现
-插件主要通过以下方式工作：
-- 使用 GitLab 页面自身的 CSRF Token 进行 API 调用
-- 通过 GraphQL API 获取 Issues 数据
-- 直接操作 GitLab 页面的 DOM 元素
-- 使用 URL 参数来应用过滤条件
+**Q: 过滤功能不工作？**
+A: 检查网络连接和 GitLab 访问权限
 
-## 贡献指南
+**Q: 支持哪些 GitLab 版本？**
+A: 支持 GitLab 13.0 及以上版本
 
-欢迎提交 Issue 和 Pull Request！
+## 📞 反馈支持
 
-### 开发环境设置
-1. Fork 本仓库
-2. 创建功能分支
-3. 提交更改
-4. 创建 Pull Request
+遇到问题或有建议？欢迎：
+- 提交 [Issues](https://github.com/your-username/gitlab-board-plus/issues)
+- 创建 Pull Request
+- 联系开发者
 
-### 代码规范
-- 使用 ES6+ 语法
-- 遵循 JavaScript Standard Style
-- 添加适当的注释
-- 保持代码简洁易读
+---
 
-## 许可证
-
-MIT License - 详见 [LICENSE](LICENSE) 文件
-
-## 更新日志
-
-### v1.1.0
-- 简化配置：移除 Access Token 要求
-- 优化用户体验：只需配置 GitLab URL
-- 增强稳定性：直接使用 GitLab 页面认证
-
-### v1.0.0
-- 初始版本发布
-- 基础 Board 增强功能
-- GitLab API 集成
-- 弹窗界面和设置
-
-## 支持
-
-如果你遇到问题或有功能建议，请：
-1. 查看 [Issues](https://github.com/your-username/gitlab-board-plus/issues)
-2. 创建新的 Issue
-3. 提供详细的问题描述和环境信息
-
-## 致谢
-
-感谢 GitLab 团队提供优秀的 API 和平台。 
+**MIT License** | 让 GitLab Board 管理更简单 🎉 
