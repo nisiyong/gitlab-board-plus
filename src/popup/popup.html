@@ -27,55 +27,14 @@
           <span class="status-label">GitLab URL:</span>
           <span class="status-value" id="gitlabUrl">未配置</span>
         </div>
-        <div class="status-item">
-          <span class="status-label">Access Token:</span>
-          <span class="status-value" id="accessToken">未配置</span>
-        </div>
       </div>
 
-      <!-- 快速访问 -->
-      <section class="quick-access" id="quickAccess">
-        <h2>快速访问</h2>
-        <div class="projects-list" id="projectsList">
-          <div class="loading">正在加载项目...</div>
-        </div>
-      </section>
-
-      <!-- 统计信息 -->
-      <section class="statistics" id="statistics">
-        <h2>统计信息</h2>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <div class="stat-number" id="totalIssues">-</div>
-            <div class="stat-label">总 Issues</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number" id="assignedToMe">-</div>
-            <div class="stat-label">分配给我</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number" id="overdueIssues">-</div>
-            <div class="stat-label">已逾期</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 快速操作 -->
-      <section class="quick-actions">
-        <h2>快速操作</h2>
-        <div class="actions-grid">
-          <button class="action-btn" id="createIssueBtn">
-            <span class="action-icon">➕</span>
-            <span class="action-text">创建 Issue</span>
-          </button>
-          <button class="action-btn" id="viewBoardsBtn">
-            <span class="action-icon">📋</span>
-            <span class="action-text">查看 Boards</span>
-          </button>
-          <button class="action-btn" id="refreshDataBtn">
-            <span class="action-icon">🔄</span>
-            <span class="action-text">刷新数据</span>
-          </button>
+      <!-- 使用说明 -->
+      <section class="usage-info">
+        <h2>使用说明</h2>
+        <div class="info-content">
+          <p>🎯 在 GitLab Board 页面使用快捷过滤功能</p>
+          <p>⚙️ 点击右上角设置按钮配置 GitLab URL</p>
         </div>
       </section>
     </main>
@@ -92,15 +51,6 @@
           <label for="gitlabUrlInput">GitLab URL:</label>
           <input type="url" id="gitlabUrlInput" placeholder="https://gitlab.example.com" required>
           <small>请输入你的 GitLab 实例 URL</small>
-        </div>
-        
-        <div class="form-group">
-          <label for="accessTokenInput">Access Token:</label>
-          <input type="password" id="accessTokenInput" placeholder="glpat-xxxxxxxxxxxxxxxxxxxx" required>
-          <small>
-            在 GitLab 的 User Settings > Access Tokens 中创建<br>
-            需要 api, read_user, read_repository 权限
-          </small>
         </div>
         
         <div class="form-actions">

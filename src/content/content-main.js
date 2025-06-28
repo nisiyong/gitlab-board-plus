@@ -2,10 +2,12 @@
 console.log('🚀 GitLab Board Plus content script loaded');
 
 // 调试模式检测
-const DEBUG_MODE = window.location.search.includes('debug=true') || 
-                   localStorage.getItem('gitlab-board-plus-debug') === 'true';
+if (typeof window.DEBUG_MODE === 'undefined') {
+  window.DEBUG_MODE = window.location.search.includes('debug=true') || 
+                      localStorage.getItem('gitlab-board-plus-debug') === 'true';
+}
 
-if (DEBUG_MODE) {
+if (window.DEBUG_MODE) {
   console.log('🔧 Debug mode enabled');
   // 动态加载调试脚本
   const debugScript = document.createElement('script');
@@ -15,6 +17,7 @@ if (DEBUG_MODE) {
 }
 
 // GitLab Board 增强器主类
+if (typeof GitLabBoardEnhancer === 'undefined') {
 class GitLabBoardEnhancer {
   constructor() {
     this.currentUrl = window.location.href;
@@ -320,7 +323,9 @@ class GitLabBoardEnhancer {
 }
 
 // 初始化增强器
-const enhancer = new GitLabBoardEnhancer();
-
-// 将增强器实例暴露到全局对象以便调试
-window.gitlabBoardEnhancer = enhancer; 
+if (typeof window.gitlabBoardEnhancer === 'undefined') {
+  const enhancer = new GitLabBoardEnhancer();
+  // 将增强器实例暴露到全局对象以便调试
+  window.gitlabBoardEnhancer = enhancer;
+}
+} 

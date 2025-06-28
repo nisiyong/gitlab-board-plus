@@ -2,6 +2,7 @@
 console.log('🎯 GitLab Board Plus filters manager loaded');
 
 // 快捷过滤管理器类
+if (typeof FiltersShortcutsManager === 'undefined') {
 class FiltersShortcutsManager {
   constructor(container, boardEnhancer) {
     this.container = container;
@@ -966,4 +967,5 @@ class FiltersShortcutsManager {
 }
 
 // 导出过滤管理器类
-window.FiltersShortcutsManager = FiltersShortcutsManager; 
+window.FiltersShortcutsManager = FiltersShortcutsManager;
+} 

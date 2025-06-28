@@ -2,6 +2,7 @@
 console.log('📋 GitLab Board Plus board enhancer loaded');
 
 // Board 增强功能类
+if (typeof BoardEnhancer === 'undefined') {
 class BoardEnhancer {
   constructor(enhancer) {
     this.enhancer = enhancer;
@@ -533,4 +534,5 @@ class BoardEnhancer {
 }
 
 // 导出 Board 增强器类
-window.BoardEnhancer = BoardEnhancer; 
+window.BoardEnhancer = BoardEnhancer;
+} 

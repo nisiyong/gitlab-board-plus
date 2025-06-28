@@ -5,7 +5,21 @@
   "description": "Enhance GitLab Issue Boards with advanced filtering and improved UX",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "scripting"
+  ],
+  "optional_permissions": [
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://gitlab.com/*",
+    "https://*.gitlab.com/*",
+    "https://*.gitlab.io/*",
+    "http://localhost/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
   ],
   "content_scripts": [
     {

@@ -2,6 +2,7 @@
 console.log('🔧 GitLab Board Plus utils loaded');
 
 // 用户信息和数据提取工具类
+if (typeof GitLabUtils === 'undefined') {
 class GitLabUtils {
   // 获取当前用户
   static getCurrentUser() {
@@ -1079,4 +1080,5 @@ class GitLabUtils {
 }
 
 // 导出工具类
-window.GitLabUtils = GitLabUtils; 
+window.GitLabUtils = GitLabUtils;
+} 
