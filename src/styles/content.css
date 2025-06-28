@@ -505,6 +505,12 @@
   user-select: none;
 }
 
+/* 默认展开的分组 - 里程碑和指派人 */
+.filter-group[data-group-id="milestone"],
+.filter-group[data-group-id="assignee"] {
+  /* 确保默认展开状态 */
+}
+
 .filter-group.collapsed .filter-group-items {
   display: none;
 }
