@@ -749,10 +749,17 @@ class FiltersShortcutsManager {
   handleGroupToggle(header) {
     const group = header.closest('.filter-group');
     if (group) {
+      const groupId = group.getAttribute('data-group-id');
+      
+      // 默认展开的分组不允许折叠
+      const defaultExpandedGroups = ['milestone', 'assignee'];
+      if (defaultExpandedGroups.includes(groupId)) {
+        return;
+      }
+      
       group.classList.toggle('collapsed');
       
       // 保存折叠状态到本地存储
-      const groupId = group.getAttribute('data-group-id');
       const isCollapsed = group.classList.contains('collapsed');
       this.saveGroupCollapsedState(groupId, isCollapsed);
     }
@@ -760,7 +767,11 @@ class FiltersShortcutsManager {
 
   // 保存分组折叠状态
   saveGroupCollapsedState(groupId, isCollapsed) {
-
+    // 默认展开的分组不保存折叠状态
+    const defaultExpandedGroups = ['milestone', 'assignee'];
+    if (defaultExpandedGroups.includes(groupId)) {
+      return;
+    }
   
     try {
       const key = 'gitlab-board-plus-group-collapsed-states';
@@ -778,7 +789,20 @@ class FiltersShortcutsManager {
       const key = 'gitlab-board-plus-group-collapsed-states';
       const states = JSON.parse(localStorage.getItem(key) || '{}');
       
+      // 默认展开的分组列表
+      const defaultExpandedGroups = ['milestone', 'assignee'];
+      
       Object.entries(states).forEach(([groupId, isCollapsed]) => {
+        // 如果是默认展开的分组，强制展开
+        if (defaultExpandedGroups.includes(groupId)) {
+          const group = this.container.querySelector(`[data-group-id="${groupId}"]`);
+          if (group) {
+            group.classList.remove('collapsed');
+          }
+          return;
+        }
+        
+        // 其他分组按照保存的状态处理
         if (isCollapsed) {
           const group = this.container.querySelector(`[data-group-id="${groupId}"]`);
           if (group) {
