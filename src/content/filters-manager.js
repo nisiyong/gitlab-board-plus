@@ -47,6 +47,14 @@ class FiltersShortcutsManager {
     // 分组过滤选项
     this.filterGroups = [
       {
+        id: 'milestone',
+        name: '里程碑',
+        icon: '🎯',
+        type: 'multiple',
+        loadDynamic: true,
+        items: []
+      },
+      {
         id: 'assignee',
         name: '指派人',
         icon: '👤',
@@ -81,14 +89,6 @@ class FiltersShortcutsManager {
             userData: this.currentUser // 使用当前用户数据
           }
         ]
-      },
-      {
-        id: 'milestone',
-        name: '里程碑',
-        icon: '🎯',
-        type: 'multiple',
-        loadDynamic: true,
-        items: []
       },
       {
         id: 'label',
