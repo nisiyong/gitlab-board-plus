@@ -98,7 +98,8 @@ const settingsManager = new SettingsManager();
 
 // 插件安装时初始化
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log('GitLab Board Plus 插件已安装');
+  // 移除插件安装日志
+  // console.log('GitLab Board Plus 插件已安装');
 });
 
 // 监听标签页更新，自动检测 GitLab Board 页面
@@ -114,7 +115,8 @@ async function handleTabUpdate(tabId, tab) {
   try {
     // 检查是否是 GitLab Board 页面
     if (isGitLabBoardPage(tab.url)) {
-      console.log('检测到 GitLab Board 页面:', tab.url);
+      // 移除检测GitLab Board页面的日志
+      // console.log('检测到 GitLab Board 页面:', tab.url);
       
       // 自动检测 GitLab 实例并保存配置
       const gitlabUrl = extractGitLabBaseUrl(tab.url);
@@ -125,11 +127,13 @@ async function handleTabUpdate(tabId, tab) {
           await settingsManager.saveSettings({
             gitlabUrl: gitlabUrl
           });
-          console.log('自动保存 GitLab URL:', gitlabUrl);
+          // 移除自动保存URL的日志
+          // console.log('自动保存 GitLab URL:', gitlabUrl);
         }
       }
     }
   } catch (error) {
+    // 保留错误日志
     console.error('处理标签页更新时出错:', error);
   }
 }
@@ -179,6 +183,7 @@ async function handleMessage(request, sender, sendResponse) {
         sendResponse({ success: false, error: '未知的操作类型' });
     }
   } catch (error) {
+    // 保留错误日志
     console.error('处理消息时出错:', error);
     sendResponse({ success: false, error: error.message });
   }

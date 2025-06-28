@@ -1,5 +1,4 @@
 // GitLab Board Plus - 工具函数
-console.log('🔧 GitLab Board Plus utils loaded');
 
 // 用户信息和数据提取工具类
 if (typeof GitLabUtils === 'undefined') {
@@ -17,7 +16,6 @@ class GitLabUtils {
         username = window.gon.current_username;
         name = window.gon.current_user_fullname || username;
         avatarUrl = window.gon.current_user_avatar_url;
-        console.log(`✅ Found current user from gon: ${username}`);
       }
       
       // 方法2: 从用户菜单获取
@@ -52,7 +50,7 @@ class GitLabUtils {
           }
           
           if (username) {
-            console.log(`✅ Found current user from user menu: ${username}`);
+            return username;
           }
         }
       }
@@ -62,7 +60,6 @@ class GitLabUtils {
         const bodyData = document.body.dataset;
         if (bodyData.user || bodyData.username) {
           username = bodyData.user || bodyData.username;
-          console.log(`✅ Found current user from body data: ${username}`);
         }
       }
       
@@ -73,7 +70,6 @@ class GitLabUtils {
                         document.querySelector('meta[name="current-user-id"]');
         if (userMeta) {
           username = userMeta.getAttribute('content');
-          console.log(`✅ Found current user from meta: ${username}`);
         }
       }
       
@@ -84,7 +80,6 @@ class GitLabUtils {
           const userMatch = currentPath.match(/\/users\/([^\/]+)/);
           if (userMatch && userMatch[1]) {
             username = userMatch[1];
-            console.log(`✅ Found current user from URL path: ${username}`);
           }
         }
       }
@@ -159,8 +154,6 @@ class GitLabUtils {
       });
       
       const members = Array.from(membersMap.values());
-      console.log(`✅ Extracted ${members.length} members from page:`, members);
-      
       return members;
       
     } catch (error) {
@@ -206,7 +199,6 @@ class GitLabUtils {
     for (const selector of selectors) {
       const input = document.querySelector(selector);
       if (input) {
-        console.log(`✅ Found search input with selector: ${selector}`);
         return input;
       }
     }
@@ -218,8 +210,6 @@ class GitLabUtils {
   // 应用搜索过滤
   static applySearchFilter(searchInput, filterQuery) {
     try {
-      console.log(`🔍 Applying search filter: "${filterQuery}"`);
-      
       // 清空当前搜索内容
       searchInput.value = '';
       
@@ -252,8 +242,6 @@ class GitLabUtils {
           }, 100);
         }, 200);
       }
-      
-      console.log(`✅ Search filter applied successfully`);
     } catch (error) {
       console.error('❌ Error applying search filter:', error);
     }
@@ -439,7 +427,6 @@ class GitLabUtils {
           avatarUrl: node.user.avatarUrl
         }));
 
-        console.log(`✅ Fetched ${members.length} project members from API:`, members);
         return members;
       } else {
         console.warn('❌ No project members data found in API response');
@@ -541,7 +528,6 @@ class GitLabUtils {
           title: node.title
         }));
 
-        console.log(`✅ Fetched ${milestones.length} milestones from API:`, milestones);
         return milestones;
       } else {
         console.warn('❌ No milestones data found in API response');
@@ -558,14 +544,11 @@ class GitLabUtils {
   // 通过 Issues GraphQL API 获取用户列表（创建人和指派人）
   static async fetchUsersFromIssuesAPI() {
     try {
-      console.log('🔍 Fetching users from Issues API...');
-      
       const projectId = this.extractProjectId();
       if (!projectId) {
         console.warn('❌ Could not extract project ID for Issues API');
         return [];
       }
-      console.log(`📁 Project ID: ${projectId}`);
 
       const csrfToken = this.getCSRFToken();
       if (!csrfToken) {
@@ -634,8 +617,6 @@ class GitLabUtils {
         }`
       };
 
-      console.log('📤 Sending Issues GraphQL request...');
-      
       // 发送 GraphQL 请求
       const response = await fetch(`${window.location.origin}/api/graphql`, {
         method: 'POST',
@@ -651,7 +632,6 @@ class GitLabUtils {
       }
 
       const data = await response.json();
-      console.log('📥 Issues API response received');
       
       // 检查响应结构
       if (!data || !Array.isArray(data) || data.length === 0) {
@@ -666,7 +646,6 @@ class GitLabUtils {
       
       if (data[0]?.data?.project?.issues?.nodes) {
         const issues = data[0].data.project.issues.nodes;
-        console.log(`📋 Found ${issues.length} issues to process`);
         
         const usersMap = new Map();
         let authorCount = 0;
@@ -721,33 +700,21 @@ class GitLabUtils {
         const uniqueAssignees = users.filter(u => u.isAssignee).length;
         const bothRoles = users.filter(u => u.isAuthor && u.isAssignee).length;
         
-        console.log(`✅ Successfully processed ${users.length} unique users from Issues API`);
-        console.log(`📊 User statistics:
-  - Unique authors: ${uniqueAuthors}
-  - Unique assignees: ${uniqueAssignees}
-  - Users with both roles: ${bothRoles}
-  - Total processed issues: ${issues.length}`);
-        
         return users;
       } else {
         console.warn('❌ No issues data found in API response structure');
-        console.log('Response structure:', data[0]?.data);
         return [];
       }
 
     } catch (error) {
       console.error('❌ Error fetching users from Issues API:', error);
-      console.log('🔄 Falling back to project members API...');
-      // 如果 API 调用失败，回退到原有的成员获取方法
-      return this.fetchProjectMembersFromAPI();
+      return [];
     }
   }
 
   // 通过 Issues GraphQL API 获取统计数据（指派人、创建人、里程碑的issue数量）
   static async fetchIssuesStatistics() {
     try {
-      console.log('📊 Fetching issues statistics...');
-      
       const projectId = this.extractProjectId();
       if (!projectId) {
         console.warn('❌ Could not extract project ID for statistics');
@@ -821,8 +788,6 @@ class GitLabUtils {
         }`
       };
 
-      console.log('📤 Sending Issues Statistics GraphQL request...');
-      
       // 发送 GraphQL 请求
       const response = await fetch(`${window.location.origin}/api/graphql`, {
         method: 'POST',
@@ -838,7 +803,6 @@ class GitLabUtils {
       }
 
       const data = await response.json();
-      console.log('📥 Issues Statistics API response received');
       
       // 检查响应结构
       if (!data || !Array.isArray(data) || data.length === 0) {
@@ -853,7 +817,6 @@ class GitLabUtils {
       
       if (data[0]?.data?.project?.issues?.nodes) {
         const issues = data[0].data.project.issues.nodes;
-        console.log(`📋 Processing ${issues.length} issues for statistics`);
         
         const assigneeStats = {};
         const authorStats = {};
@@ -884,12 +847,6 @@ class GitLabUtils {
           }
         });
         
-        console.log('📊 Statistics calculated:');
-        console.log('  Assignee stats:', assigneeStats);
-        console.log('  Author stats:', authorStats);
-        console.log('  Milestone stats:', milestoneStats);
-        console.log('  Total issues:', issues.length);
-        
         return { assigneeStats, authorStats, milestoneStats, totalIssues: issues.length };
       } else {
         console.warn('❌ No issues data found in statistics API response structure');
@@ -909,20 +866,17 @@ class GitLabUtils {
       const csrfMeta = document.querySelector('meta[name="csrf-token"]');
       if (csrfMeta) {
         const token = csrfMeta.getAttribute('content');
-        console.log('✅ Found CSRF token from meta tag');
         return token;
       }
 
       // 方法2: 从页面的 gon 对象获取
       if (window.gon && window.gon.api_token) {
-        console.log('✅ Found CSRF token from gon object');
         return window.gon.api_token;
       }
 
       // 方法3: 从现有的 AJAX 请求头中获取
       const ajaxSetup = window.jQuery && window.jQuery.ajaxSetup;
       if (ajaxSetup && ajaxSetup().headers && ajaxSetup().headers['X-CSRF-Token']) {
-        console.log('✅ Found CSRF token from jQuery AJAX setup');
         return ajaxSetup().headers['X-CSRF-Token'];
       }
 
@@ -935,28 +889,13 @@ class GitLabUtils {
   }
   // 测试函数 - 在浏览器控制台中调用来测试新的 Issues API
   static async testIssuesAPI() {
-    console.log('🧪 Testing Issues API...');
-    try {
-      const users = await this.fetchUsersFromIssuesAPI();
-      console.log('✅ Issues API test completed');
-      console.table(users);
-      
-      // 分析数据
-      const authors = users.filter(u => u.isAuthor);
-      const assignees = users.filter(u => u.isAssignee);
-      const both = users.filter(u => u.isAuthor && u.isAssignee);
-      
-      console.log(`📊 Summary:
-- Total users: ${users.length}
-- Authors only: ${authors.filter(u => !u.isAssignee).length}
-- Assignees only: ${assignees.filter(u => !u.isAuthor).length}
-- Both author and assignee: ${both.length}`);
-      
-      return users;
-    } catch (error) {
-      console.error('❌ Issues API test failed:', error);
-      return [];
-    }
+    const stats = await this.fetchIssuesStatistics();
+    
+    const members = await this.fetchProjectMembersFromAPI();
+    const milestones = await this.fetchMilestonesFromAPI();
+    const users = await this.fetchUsersFromIssuesAPI();
+    
+    return { members, milestones, users, stats };
   }
 }
 

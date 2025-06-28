@@ -8,8 +8,6 @@ class PopupManager {
 
   // 初始化
   async init() {
-    console.log('初始化弹窗界面');
-    
     // 绑定事件
     this.bindEvents();
     
@@ -44,8 +42,6 @@ class PopupManager {
       console.error('检查当前页面失败:', error);
     }
   }
-
-
 
   // 显示信息提示
   showInfo(message) {
@@ -208,8 +204,6 @@ class PopupManager {
       return { success: false, message: error.message };
     }
   }
-
-
 
   // 测试连接
   async testConnection() {

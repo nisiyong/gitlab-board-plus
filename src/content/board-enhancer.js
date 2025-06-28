@@ -1,5 +1,5 @@
 // GitLab Board Plus - Board 增强器
-console.log('📋 GitLab Board Plus board enhancer loaded');
+// console.log('📋 GitLab Board Plus board enhancer loaded');
 
 // Board 增强功能类
 if (typeof BoardEnhancer === 'undefined') {
@@ -11,7 +11,8 @@ class BoardEnhancer {
 
   // 增强 Board 页面
   enhanceBoard() {
-    console.log('增强 Board 页面功能');
+    // 移除增强Board页面的日志
+    // console.log('增强 Board 页面功能');
     
     // 重新组织整个 boards-app 结构
     this.restructureBoardsApp();
@@ -21,17 +22,19 @@ class BoardEnhancer {
   restructureBoardsApp() {
     const boardsApp = document.querySelector('.boards-app');
     if (!boardsApp) {
+      // 保留警告日志
       console.warn('Boards app not found');
       return;
     }
 
-    // 检查是否已经处理过
     if (boardsApp.classList.contains('gitlab-board-plus-restructured')) {
-      console.log('Boards app already restructured');
+      // 移除已重构的日志
+      // console.log('Boards app already restructured');
       return;
     }
 
-    console.log('Starting boards app restructuring...');
+    // 移除开始重构的日志
+    // console.log('Starting boards app restructuring...');
 
     try {
       // 创建新的结构
@@ -53,7 +56,8 @@ class BoardEnhancer {
       // 标记已完成重构
       boardsApp.classList.add('gitlab-board-plus-restructured');
 
-      console.log('✅ Board restructuring completed');
+      // 移除重构完成的日志
+      // console.log('✅ Board restructuring completed');
       
       // 创建 board tabs - 延迟一点确保 DOM 更新完成
       setTimeout(() => {
@@ -61,6 +65,7 @@ class BoardEnhancer {
       }, 100);
       
     } catch (error) {
+      // 保留错误日志
       console.error('❌ Error during board restructuring:', error);
     }
   }
@@ -126,22 +131,26 @@ class BoardEnhancer {
       // 将原有的 issues-filters 整体移动到过滤容器
       if (originalIssuesFilters && filtersContainer) {
         filtersContainer.appendChild(originalIssuesFilters);
-        console.log('✅ Moved original issues-filters to filters container');
+        // 移除移动filters的日志
+        // console.log('✅ Moved original issues-filters to filters container');
       }
       
       // 移动 boards 列表
       if (originalBoardsList && boardsListContainer) {
         boardsListContainer.appendChild(originalBoardsList);
-        console.log('✅ Moved boards list to boards list container');
+        // 移除移动boards list的日志
+        // console.log('✅ Moved boards list to boards list container');
       }
       
       // 移动 v-portal（如果存在）
       if (originalVPortal && boardsListContainer) {
         boardsListContainer.appendChild(originalVPortal);
-        console.log('✅ Moved v-portal to boards list container');
+        // 移除移动v-portal的日志
+        // console.log('✅ Moved v-portal to boards list container');
       }
       
     } catch (error) {
+      // 保留错误日志
       console.error('❌ Error moving existing content:', error);
     }
   }
@@ -155,7 +164,8 @@ class BoardEnhancer {
   // 创建 board tabs 后处理逻辑
   createBoardTabsAfterRestructure() {
     try {
-      console.log('🔄 Creating board tabs after restructure...');
+      // 移除创建board tabs的日志
+      // console.log('🔄 Creating board tabs after restructure...');
       
       // 查找 boards-selector 
       const boardsSelector = document.querySelector('[data-testid="boards-selector"]');
@@ -166,10 +176,10 @@ class BoardEnhancer {
       
       // 获取当前 board ID
       const currentBoardId = GitLabUtils.getCurrentBoardId();
-      console.log('Current board ID:', currentBoardId);
+      // console.log('Current board ID:', currentBoardId);
       
       // 查找已经创建的 tabs 容器
-      const tabsContainer = document.querySelector('.boards-tabs-wrapper');
+      const tabsContainer = boardsSelector.querySelector('.boards-tabs-wrapper');
       if (!tabsContainer) {
         console.warn('❌ boards-tabs-wrapper not found for tabs');
         return;
@@ -178,7 +188,8 @@ class BoardEnhancer {
       // 创建 board tabs
       this.createBoardTabs(tabsContainer, currentBoardId);
       
-      console.log('✅ Board tabs creation completed');
+      // 移除创建board tabs的日志
+      // console.log('✅ Board tabs creation completed');
       
     } catch (error) {
       console.error('❌ Error creating board tabs after restructure:', error);
@@ -190,13 +201,13 @@ class BoardEnhancer {
     // 检查是否已经有 tabs，如果有则不再修改
     const existingTabs = container.querySelectorAll('.boards-tab');
     if (existingTabs.length > 0) {
-      console.log('Tabs already exist, no modifications allowed');
+      // console.log('Tabs already exist, no modifications allowed');
       return;
     }
     
     // 标记容器已初始化，防止重复创建
     if (container.hasAttribute('data-tabs-initialized')) {
-      console.log('Tabs container already initialized, skipping');
+      // console.log('Tabs container already initialized, skipping');
       return;
     }
     
@@ -209,7 +220,7 @@ class BoardEnhancer {
     container.appendChild(tabsWrapper);
     
     // 尝试加载 boards 数据
-    console.log('🔄 Loading boards data...');
+    // console.log('🔄 Loading boards data...');
     let boards = [];
     
     try {
@@ -217,16 +228,17 @@ class BoardEnhancer {
       boards = await this.loadBoardsData();
     } catch (error) {
       console.error('Error loading boards data:', error);
+      return;
     }
     
     // 如果仍然没有数据，创建当前 board 的 tab
-    if (boards.length === 0) {
-      console.log('📋 No additional boards found - creating single tab for current board');
+    if (!boards || boards.length === 0) {
+      // console.log('📋 No additional boards found - creating single tab for current board');
       const currentBoardName = this.getCurrentBoardName();
+      // console.log(`✅ Created single board tab: "${currentBoardName}"`);
       this.createSingleBoardTab(tabsWrapper, currentBoardName, currentBoardId, true);
-      console.log(`✅ Created single board tab: "${currentBoardName}"`);
     } else {
-      console.log(`✅ Found ${boards.length} boards, creating multiple tabs`);
+      // console.log(`✅ Found ${boards.length} boards, creating multiple tabs`);
       // 为每个 board 创建 tab
       boards.forEach(board => {
         const isActive = board.id === currentBoardId || 
@@ -234,12 +246,12 @@ class BoardEnhancer {
                         board.url.includes(`/boards/${currentBoardId}`);
         this.createBoardTab(tabsWrapper, board, isActive);
       });
-      console.log(`✅ Created ${boards.length} board tabs successfully`);
+      // console.log(`✅ Created ${boards.length} board tabs successfully`);
     }
     
     // 标记容器已初始化
     container.setAttribute('data-tabs-initialized', 'true');
-    console.log(`✅ Tabs created and locked: ${tabsWrapper.children.length} tabs`);
+    // console.log(`✅ Tabs created and locked: ${tabsWrapper.children.length} tabs`);
   }
 
   // 获取当前 Board 名称
@@ -272,7 +284,7 @@ class BoardEnhancer {
                   text !== '' &&
                   !text.includes('Select board') &&
                   !text.includes('Choose board')) {
-                console.log(`📋 Found current board name: "${text}"`);
+                // console.log(`📋 Found current board name: "${text}"`);
                 return text;
               }
             }
@@ -304,7 +316,7 @@ class BoardEnhancer {
   // 从下拉框中提取 boards 数据
   // 通过 GraphQL 获取 boards 数据 (替代之前的下拉框方式)
   async loadBoardsData() {
-    console.log('🔄 Loading boards via GraphQL API...');
+    // console.log('🔄 Loading boards via GraphQL API...');
     return await this.loadBoardsViaGraphQL();
   }
 
@@ -322,17 +334,17 @@ class BoardEnhancer {
     
     // 添加点击事件
     tab.addEventListener('click', () => {
-      console.log(`🎯 Board tab clicked: ${board.name} (${board.id})`);
+      // console.log(`🎯 Board tab clicked: ${board.name} (${board.id})`);
       
       // 检查是否是当前 board
       if (isActive) {
-        console.log('Already on this board');
+        // console.log('Already on this board');
         return;
       }
       
       // 导航到目标 board
       if (board.url && board.url !== window.location.pathname) {
-        console.log(`🚀 Navigating to: ${board.url}`);
+        // console.log(`🚀 Navigating to: ${board.url}`);
         window.location.href = board.url;
       }
     });
@@ -431,7 +443,7 @@ class BoardEnhancer {
 
   // 通过 GraphQL 获取 boards 数据
   async loadBoardsViaGraphQL() {
-    console.log('🚀 Loading boards via GraphQL...');
+    // console.log('🚀 Loading boards via GraphQL...');
     
     try {
       // 获取项目路径
@@ -471,7 +483,7 @@ class BoardEnhancer {
       }
 
       // 发送 GraphQL 请求
-      console.log(`📡 Sending GraphQL request to: ${graphqlUrl}`);
+      // console.log(`📡 Sending GraphQL request to: ${graphqlUrl}`);
       const response = await fetch(graphqlUrl, {
         method: 'POST',
         headers: {
@@ -489,7 +501,7 @@ class BoardEnhancer {
       }
 
       const results = await response.json();
-      console.log('📊 GraphQL response received:', results);
+      // console.log('📊 GraphQL response received:', results);
 
       // 解析响应数据
       const boards = new Map(); // 使用 Map 来去重
@@ -522,7 +534,7 @@ class BoardEnhancer {
       });
 
       const boardsList = Array.from(boards.values());
-      console.log(`✅ Successfully loaded ${boardsList.length} boards via GraphQL:`, boardsList);
+      // console.log(`✅ Successfully loaded ${boardsList.length} boards via GraphQL:`, boardsList);
       
       return boardsList;
 

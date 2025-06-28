@@ -1,5 +1,5 @@
 // GitLab Board Plus - 主入口文件
-console.log('🚀 GitLab Board Plus content script loaded');
+// console.log('🚀 GitLab Board Plus content script loaded');
 
 // 调试模式检测
 if (typeof window.DEBUG_MODE === 'undefined') {
@@ -8,11 +8,11 @@ if (typeof window.DEBUG_MODE === 'undefined') {
 }
 
 if (window.DEBUG_MODE) {
-  console.log('🔧 Debug mode enabled');
+  // console.log('🔧 Debug mode enabled');
   // 动态加载调试脚本
   const debugScript = document.createElement('script');
   debugScript.src = chrome.runtime.getURL('debug-boards.js');
-  debugScript.onload = () => console.log('🛠️ Debug script loaded');
+  // debugScript.onload = () => console.log('🛠️ Debug script loaded');
   document.head.appendChild(debugScript);
 }
 
@@ -52,21 +52,19 @@ class GitLabBoardEnhancer {
     
     const result = hasGitLabPath || hasGitLabElements || hasGitLabMeta;
     
-    if (result) {
-      console.log('检测到 GitLab 页面:', {
-        url: window.location.href,
-        hasGitLabPath,
-        hasGitLabElements: !!hasGitLabElements,
-        hasGitLabMeta: !!hasGitLabMeta
-      });
-    }
+    // console.log('检测到 GitLab 页面:', {
+    //     url: window.location.href,
+    //     hasGitLabPath: hasGitLabPath,
+    //     hasGitLabElements: hasGitLabElements,
+    //     hasGitLabMeta: hasGitLabMeta
+    // });
     
     return result;
   }
 
   // 初始化增强功能
   init() {
-    console.log('GitLab Board Plus 内容脚本已加载');
+    // console.log('GitLab Board Plus 内容脚本已加载');
     
     // 等待页面加载完成
     if (document.readyState === 'loading') {
@@ -113,7 +111,7 @@ class GitLabBoardEnhancer {
 
   // 增强 Board 页面
   enhanceBoard() {
-    console.log('增强 Board 页面功能');
+    // console.log('增强 Board 页面功能');
     
     // 委托给 BoardEnhancer
     this.boardEnhancer.enhanceBoard();
@@ -121,7 +119,7 @@ class GitLabBoardEnhancer {
 
   // 应用过滤模版
   applyFilterTemplate(templateType) {
-    console.log(`🔍 Applying filter template: ${templateType}`);
+    // console.log(`🔍 Applying filter template: ${templateType}`);
     
     // 使用URL参数的方式来应用过滤
     this.applyFilterViaUrl(templateType);
@@ -162,7 +160,7 @@ class GitLabBoardEnhancer {
           break;
       }
       
-      console.log(`🔄 Navigating to: ${currentUrl.toString()}`);
+      // console.log(`🔄 Navigating to: ${currentUrl.toString()}`);
       
       // 直接导航到新的URL
       window.location.href = currentUrl.toString();
@@ -190,11 +188,12 @@ class GitLabBoardEnhancer {
 
   // 回退到搜索框方式（如果URL方式失败）
   fallbackToSearchInput(templateType) {
-    console.log('🔄 Falling back to search input method');
+    // console.log('🔄 Falling back to search input method');
     
     const searchInput = GitLabUtils.getSearchInput();
     if (!searchInput) {
-      console.warn('❌ Search input not found for fallback');
+      // 保留警告日志
+      // console.warn('❌ Search input not found for fallback');
       return;
     }
 
@@ -257,7 +256,7 @@ class GitLabBoardEnhancer {
 
   // 清除过滤模版
   clearFilterTemplate() {
-    console.log('🧹 Clearing filter template');
+    // console.log('🧹 Clearing filter template');
     
     // 重置为默认模版
     const defaultTemplate = document.querySelector('.filter-template-item[data-template="default"]');
@@ -274,19 +273,19 @@ class GitLabBoardEnhancer {
 
   // 增强 Issues 页面
   enhanceIssues() {
-    console.log('增强 Issues 页面功能');
+    // console.log('增强 Issues 页面功能');
     // 这里可以添加 Issues 页面的增强功能
   }
 
   // 增强 Merge Requests 页面
   enhanceMergeRequests() {
-    console.log('增强 Merge Requests 页面功能');
+    // console.log('增强 Merge Requests 页面功能');
     // 这里可以添加 MR 页面的增强功能
   }
 
   // 通用增强功能
   enhanceGeneral() {
-    console.log('应用通用增强功能');
+    // console.log('应用通用增强功能');
     // 添加项目快速切换等通用功能
   }
 
@@ -314,11 +313,11 @@ class GitLabBoardEnhancer {
 
   // 保留方法用于向后兼容
   bindShortcutsEvents(container) {
-    console.log('🔄 Shortcuts events now handled by FiltersShortcutsManager');
+    // console.log('🔄 Shortcuts events now handled by FiltersShortcutsManager');
   }
 
   setActiveShortcutFromUrl(container) {
-    console.log('🔄 Active shortcut URL sync now handled by FiltersShortcutsManager');
+    // console.log('🔄 Active shortcut URL sync now handled by FiltersShortcutsManager');
   }
 }
 

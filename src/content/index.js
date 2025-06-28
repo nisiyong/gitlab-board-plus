@@ -1,5 +1,5 @@
 // GitLab Board Plus - 内容脚本入口
-console.log('🚀 GitLab Board Plus content script entry loaded');
+// console.log('🚀 GitLab Board Plus content script entry loaded');
 
 // 动态加载所有模块
 async function loadModules() {
@@ -14,10 +14,8 @@ async function loadModules() {
     
     for (const module of modules) {
       await loadScript(chrome.runtime.getURL(`src/content/${module}`));
-      console.log(`✅ Loaded module: ${module}`);
+      // console.log(`✅ Loaded module: ${module}`);
     }
-    
-    console.log('🎉 All modules loaded successfully');
   } catch (error) {
     console.error('❌ Error loading modules:', error);
   }
