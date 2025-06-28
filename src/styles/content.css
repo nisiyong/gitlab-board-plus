@@ -38,8 +38,8 @@
 
 /* 左侧：快捷过滤模块 */
 .issues-filters-shortcuts {
-  width: 220px;
-  min-width: 220px;
+  width: 240px;
+  min-width: 240px;
   background: #fafbfc;
   border-right: 1px solid #e5e7eb;
   padding: 16px;
@@ -503,7 +503,10 @@
 .filter-group-header {
   cursor: pointer;
   user-select: none;
+  position: relative;
 }
+
+
 
 /* 默认展开的分组 - 里程碑和指派人 */
 .filter-group[data-group-id="milestone"],

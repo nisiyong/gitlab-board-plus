@@ -141,56 +141,142 @@ class FiltersShortcutsManager {
       // 获取统计数据
       const assigneeStats = this.statistics?.assigneeStats || {};
       const authorStats = this.statistics?.authorStats || {};
+      const totalIssues = this.statistics?.totalIssues || 0;
       
-      // 更新"我"的统计数量
-      if (assigneeGroup && this.currentUser?.username) {
-        const myAssigneeItem = assigneeGroup.items.find(item => item.isDefault);
-        if (myAssigneeItem) {
-          myAssigneeItem.count = assigneeStats[this.currentUser.username] || 0;
-        }
-      }
+      // 计算没有指派人和没有创建人的issue数量
+      const issuesWithAssignees = Object.values(assigneeStats).reduce((sum, count) => sum + count, 0);
+      const issuesWithoutAssignees = totalIssues - issuesWithAssignees;
       
-      if (authorGroup && this.currentUser?.username) {
-        const myAuthorItem = authorGroup.items.find(item => item.isDefault);
-        if (myAuthorItem) {
-          myAuthorItem.count = authorStats[this.currentUser.username] || 0;
-        }
-      }
+      // 注意：所有issues都应该有创建人，所以issuesWithoutAuthors通常为0
+      const issuesWithAuthors = Object.values(authorStats).reduce((sum, count) => sum + count, 0);
+      const issuesWithoutAuthors = totalIssues - issuesWithAuthors;
       
-      if (assigneeGroup && users.length > 0) {
-        // 添加指派人到指派人组（除了默认的"我"）
-        const assignees = users.filter(user => user.isAssignee && user.username !== this.currentUser?.username);
-        assignees.forEach(user => {
-          const count = assigneeStats[user.username] || 0;
-          assigneeGroup.items.push({
-            id: `assignee-${user.username}`,
-            name: user.username, // 直接使用 username
-            icon: null, // 不使用 emoji，使用头像
-            filter: `assignee:@${user.username}`,
-            active: false,
-            userData: user,
-            count: count
-          });
+      if (assigneeGroup) {
+        // 重新构建指派人组选项列表
+        const assigneeItems = [];
+        
+        // 添加 "All" 选项（显示所有issues，不过滤指派人）
+        assigneeItems.push({
+          id: 'assignee-all',
+          name: 'All',
+          icon: '📋',
+          filter: 'assignee:All',
+          active: true, // 默认激活
+          count: totalIssues,
+          isAllOption: true
         });
-        console.log(`✅ Added ${assignees.length} assignees to filter group`);
+        
+        // 添加 "None" 选项（没有指派人的issues）
+        if (issuesWithoutAssignees > 0 || totalIssues === 0) {
+          assigneeItems.push({
+            id: 'assignee-none',
+            name: 'None',
+            icon: '🚫',
+            filter: 'assignee:None',
+            active: false,
+            count: issuesWithoutAssignees,
+            isNoneOption: true
+          });
+        }
+        
+        // 添加"我"选项
+        if (this.currentUser?.username) {
+          const myCount = assigneeStats[this.currentUser.username] || 0;
+          assigneeItems.push({
+            id: 'assigned-to-me',
+            name: '我',
+            icon: '👤',
+            filter: `assignee:@${this.currentUser.username}`,
+            active: false,
+            isDefault: true,
+            userData: this.currentUser,
+            count: myCount
+          });
+        }
+        
+        // 添加其他指派人（除了"我"）
+        if (users.length > 0) {
+          const assignees = users.filter(user => user.isAssignee && user.username !== this.currentUser?.username);
+          assignees.forEach(user => {
+            const count = assigneeStats[user.username] || 0;
+            assigneeItems.push({
+              id: `assignee-${user.username}`,
+              name: user.username,
+              icon: null,
+              filter: `assignee:@${user.username}`,
+              active: false,
+              userData: user,
+              count: count
+            });
+          });
+          console.log(`✅ Added ${assignees.length} assignees to filter group`);
+        }
+        
+        assigneeGroup.items = assigneeItems;
       }
       
-      if (authorGroup && users.length > 0) {
-        // 添加创建人到创建人组（除了默认的"我"）
-        const authors = users.filter(user => user.isAuthor && user.username !== this.currentUser?.username);
-        authors.forEach(user => {
-          const count = authorStats[user.username] || 0;
-          authorGroup.items.push({
-            id: `author-${user.username}`,
-            name: user.username, // 直接使用 username
-            icon: null, // 不使用 emoji，使用头像
-            filter: `author:@${user.username}`,
-            active: false,
-            userData: user,
-            count: count
-          });
+      if (authorGroup) {
+        // 重新构建创建人组选项列表
+        const authorItems = [];
+        
+        // 添加 "All" 选项（显示所有issues，不过滤创建人）
+        authorItems.push({
+          id: 'author-all',
+          name: 'All',
+          icon: '📋',
+          filter: 'author:All',
+          active: true, // 默认激活
+          count: totalIssues,
+          isAllOption: true
         });
-        console.log(`✅ Added ${authors.length} authors to filter group`);
+        
+        // 添加 "None" 选项（没有创建人的issues - 通常不会有，但为了一致性保留）
+        if (issuesWithoutAuthors > 0) {
+          authorItems.push({
+            id: 'author-none',
+            name: 'None',
+            icon: '🚫',
+            filter: 'author:None',
+            active: false,
+            count: issuesWithoutAuthors,
+            isNoneOption: true
+          });
+        }
+        
+        // 添加"我"选项
+        if (this.currentUser?.username) {
+          const myCount = authorStats[this.currentUser.username] || 0;
+          authorItems.push({
+            id: 'created-by-me',
+            name: '我',
+            icon: '✍️',
+            filter: `author:@${this.currentUser.username}`,
+            active: false,
+            isDefault: true,
+            userData: this.currentUser,
+            count: myCount
+          });
+        }
+        
+        // 添加其他创建人（除了"我"）
+        if (users.length > 0) {
+          const authors = users.filter(user => user.isAuthor && user.username !== this.currentUser?.username);
+          authors.forEach(user => {
+            const count = authorStats[user.username] || 0;
+            authorItems.push({
+              id: `author-${user.username}`,
+              name: user.username,
+              icon: null,
+              filter: `author:@${user.username}`,
+              active: false,
+              userData: user,
+              count: count
+            });
+          });
+          console.log(`✅ Added ${authors.length} authors to filter group`);
+        }
+        
+        authorGroup.items = authorItems;
       }
       
     } catch (error) {
@@ -205,27 +291,66 @@ class FiltersShortcutsManager {
       const milestones = await GitLabUtils.fetchMilestonesFromAPI();
       
       const milestoneGroup = this.filterGroups.find(g => g.id === 'milestone');
-      if (milestoneGroup && milestones.length > 0) {
+      if (milestoneGroup) {
         // 获取里程碑统计数据
         const milestoneStats = this.statistics?.milestoneStats || {};
         
-        // 按照名称升序排序
-        const sortedMilestones = milestones.sort((a, b) => 
-          a.title.localeCompare(b.title, 'zh-CN', { numeric: true, sensitivity: 'base' })
-        );
+        // 计算没有里程碑的issue数量
+        const totalIssues = this.statistics?.totalIssues || 0;
+        const issuesWithMilestones = Object.values(milestoneStats).reduce((sum, count) => sum + count, 0);
+        const issuesWithoutMilestones = totalIssues - issuesWithMilestones;
         
-        milestoneGroup.items = sortedMilestones.map(milestone => {
-          const count = milestoneStats[milestone.title] || 0;
-          return {
-            id: `milestone-${milestone.id}`,
-            name: milestone.title,
-            icon: '🎯',
-            filter: `milestone_title:${milestone.title}`,
-            active: false,
-            milestoneData: milestone,
-            count: count
-          };
+        // 创建里程碑选项列表
+        const milestoneItems = [];
+        
+        // 添加 "All" 选项（显示所有issues，不过滤里程碑）
+        milestoneItems.push({
+          id: 'milestone-all',
+          name: 'All',
+          icon: '📋',
+          filter: 'milestone_title:All',
+          active: true, // 默认激活
+          count: totalIssues,
+          isAllOption: true
         });
+        
+        // 添加 "None" 选项（没有里程碑的issues）
+        if (issuesWithoutMilestones > 0 || totalIssues === 0) {
+          milestoneItems.push({
+            id: 'milestone-none',
+            name: 'None',
+            icon: '🚫',
+            filter: 'milestone_title:None',
+            active: false,
+            count: issuesWithoutMilestones,
+            isNoneOption: true
+          });
+        }
+        
+        // 添加实际的里程碑选项
+        if (milestones.length > 0) {
+          // 按照名称升序排序
+          const sortedMilestones = milestones.sort((a, b) => 
+            a.title.localeCompare(b.title, 'zh-CN', { numeric: true, sensitivity: 'base' })
+          );
+          
+          const milestoneOptions = sortedMilestones.map(milestone => {
+            const count = milestoneStats[milestone.title] || 0;
+            return {
+              id: `milestone-${milestone.id}`,
+              name: milestone.title,
+              icon: '🎯',
+              filter: `milestone_title:${milestone.title}`,
+              active: false,
+              milestoneData: milestone,
+              count: count
+            };
+          });
+          
+          milestoneItems.push(...milestoneOptions);
+        }
+        
+        milestoneGroup.items = milestoneItems;
       }
       
     } catch (error) {
@@ -448,6 +573,8 @@ class FiltersShortcutsManager {
       });
     });
 
+
+
     // 过滤项点击事件 - 指派人、创建人和里程碑使用单选，标签使用多选
     const filterItems = this.container.querySelectorAll('.filter-item');
     filterItems.forEach(item => {
@@ -570,19 +697,47 @@ class FiltersShortcutsManager {
     console.log('🔗 Adding filter to URL:', filter);
     
     // 解析过滤器格式，例如：assignee:@me, author:@username, milestone:"title", label:"name"
-    if (filter.startsWith('assignee:@')) {
-      const username = filter.replace('assignee:@', '');
-      // 指派人使用单个参数，不使用数组格式
-      url.searchParams.set('assignee_username', username);
-      console.log('  ➡️ Added assignee:', username);
-    } else if (filter.startsWith('author:@')) {
-      const username = filter.replace('author:@', '');
-      url.searchParams.set('author_username', username);
-      console.log('  ➡️ Added author:', username);
+    if (filter.startsWith('assignee:')) {
+      const assignee = filter.replace('assignee:', '');
+      if (assignee === 'All') {
+        // 对于 "All" 指派人，不添加任何过滤参数（显示所有）
+        console.log('  ➡️ Assignee "All" selected, no filter applied');
+      } else if (assignee === 'None') {
+        // 对于 "None" 指派人，使用 GitLab 的特殊参数
+        url.searchParams.set('assignee_username', 'None');
+        console.log('  ➡️ Added assignee:', assignee);
+      } else if (assignee.startsWith('@')) {
+        const username = assignee.replace('@', '');
+        url.searchParams.set('assignee_username', username);
+        console.log('  ➡️ Added assignee:', username);
+      }
+    } else if (filter.startsWith('author:')) {
+      const author = filter.replace('author:', '');
+      if (author === 'All') {
+        // 对于 "All" 创建人，不添加任何过滤参数（显示所有）
+        console.log('  ➡️ Author "All" selected, no filter applied');
+      } else if (author === 'None') {
+        // 对于 "None" 创建人，使用 GitLab 的特殊参数
+        url.searchParams.set('author_username', 'None');
+        console.log('  ➡️ Added author:', author);
+      } else if (author.startsWith('@')) {
+        const username = author.replace('@', '');
+        url.searchParams.set('author_username', username);
+        console.log('  ➡️ Added author:', username);
+      }
     } else if (filter.startsWith('milestone_title:')) {
       const milestone = filter.replace('milestone_title:', '');
-      url.searchParams.set('milestone_title', milestone);
-      console.log('  ➡️ Added milestone:', milestone);
+      if (milestone === 'All') {
+        // 对于 "All" 里程碑，不添加任何过滤参数（显示所有）
+        console.log('  ➡️ Milestone "All" selected, no filter applied');
+      } else if (milestone === 'None') {
+        // 对于 "None" 里程碑，使用 GitLab 的特殊参数
+        url.searchParams.set('milestone_title', 'None');
+        console.log('  ➡️ Added milestone:', milestone);
+      } else {
+        url.searchParams.set('milestone_title', milestone);
+        console.log('  ➡️ Added milestone:', milestone);
+      }
     } else if (filter.startsWith('label:"') && filter.endsWith('"')) {
       const label = filter.slice(7, -1); // 去掉 label:" 和最后的 "
       // GitLab使用数组格式的参数
@@ -626,42 +781,52 @@ class FiltersShortcutsManager {
       this.activeFilters.clear();
       
       // 根据URL参数设置激活状态
-      let hasActiveFilters = false;
+      let hasAssigneeFilter = false;
+      let hasAuthorFilter = false;
+      let hasMilestoneFilter = false;
+      let hasLabelFilter = false;
       
       // 处理指派人（单个）
       if (assignee) {
         this.activateFilterByValue('assignee', assignee);
-        hasActiveFilters = true;
+        hasAssigneeFilter = true;
+      } else {
+        // 没有指派人过滤器时，激活"All"
+        this.activateFilterByValue('assignee', 'All');
       }
       
       // 处理创建人（单个）
       if (author) {
         this.activateFilterByValue('author', author);
-        hasActiveFilters = true;
+        hasAuthorFilter = true;
+      } else {
+        // 没有创建人过滤器时，激活"All"
+        this.activateFilterByValue('author', 'All');
       }
       
       // 处理里程碑（单个）
       if (milestone) {
         this.activateFilterByValue('milestone', milestone);
-        hasActiveFilters = true;
+        hasMilestoneFilter = true;
+      } else {
+        // 没有里程碑过滤器时，激活"All"
+        this.activateFilterByValue('milestone', 'All');
       }
       
       // 处理标签（支持多个）
       labels.forEach(label => {
         if (label) {
           this.activateFilterByValue('label', label);
-          hasActiveFilters = true;
+          hasLabelFilter = true;
         }
       });
       
-      // 如果没有任何激活的过滤器，激活默认的"全部"
-      if (!hasActiveFilters) {
-        this.activateDefaultFilter();
-      }
-      
     } catch (error) {
       console.error('❌ Error setting active filters from URL:', error);
-      this.activateDefaultFilter();
+      // 出错时激活所有组的"All"选项
+      this.activateFilterByValue('assignee', 'All');
+      this.activateFilterByValue('author', 'All');
+      this.activateFilterByValue('milestone', 'All');
     }
   }
 
@@ -683,12 +848,26 @@ class FiltersShortcutsManager {
       // 根据不同类型进行匹配
       let shouldActivate = false;
       
-      if (type === 'assignee' && filter.startsWith('assignee:@')) {
-        const filterUsername = filter.replace('assignee:@', '');
-        shouldActivate = filterUsername === value;
-      } else if (type === 'author' && filter.startsWith('author:@')) {
-        const filterUsername = filter.replace('author:@', '');
-        shouldActivate = filterUsername === value;
+      if (type === 'assignee' && filter.startsWith('assignee:')) {
+        const filterValue = filter.replace('assignee:', '');
+        if (value === 'None' && filterValue === 'None') {
+          shouldActivate = true;
+        } else if (value === 'All' && filterValue === 'All') {
+          shouldActivate = true;
+        } else if (filterValue.startsWith('@')) {
+          const filterUsername = filterValue.replace('@', '');
+          shouldActivate = filterUsername === value;
+        }
+      } else if (type === 'author' && filter.startsWith('author:')) {
+        const filterValue = filter.replace('author:', '');
+        if (value === 'None' && filterValue === 'None') {
+          shouldActivate = true;
+        } else if (value === 'All' && filterValue === 'All') {
+          shouldActivate = true;
+        } else if (filterValue.startsWith('@')) {
+          const filterUsername = filterValue.replace('@', '');
+          shouldActivate = filterUsername === value;
+        }
       } else if (type === 'milestone' && filter.startsWith('milestone_title:')) {
         const filterMilestone = filter.replace('milestone_title:', '');
         shouldActivate = filterMilestone === value;
@@ -707,6 +886,8 @@ class FiltersShortcutsManager {
       }
     });
   }
+
+
 
   // 处理重置过滤器
   handleResetFilters() {
@@ -746,9 +927,27 @@ class FiltersShortcutsManager {
 
   // 激活默认过滤器（在取消所有多选项时调用）
   activateDefaultFilter() {
-    // 由于删除了"全部"选项，这里不需要激活任何选项
-    // 只是确保所有过滤器都被清除
+    console.log('🔄 Activating default "All" filters');
+    
+    // 清除所有过滤器
     this.activeFilters.clear();
+    
+    // 激活所有组的"All"选项
+    const groupsWithAllOption = ['assignee', 'author', 'milestone'];
+    
+    groupsWithAllOption.forEach(groupType => {
+      const allItems = this.container.querySelectorAll(`.filter-item[data-group-type="${groupType}"]`);
+      allItems.forEach(item => {
+        const filter = item.getAttribute('data-filter');
+        if (filter && filter.endsWith(':All')) {
+          console.log(`  ✅ Activating default "All" for ${groupType}:`, filter);
+          item.classList.add('active');
+          const input = item.querySelector('input[type="checkbox"], input[type="radio"]');
+          if (input) input.checked = true;
+          this.activeFilters.add(filter);
+        }
+      });
+    });
   }
 
   // 处理分组折叠/展开

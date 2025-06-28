@@ -963,12 +963,12 @@ class GitLabUtils {
       // 检查响应结构
       if (!data || !Array.isArray(data) || data.length === 0) {
         console.warn('❌ Invalid response structure from Issues Statistics API:', data);
-        return { assigneeStats: {}, authorStats: {}, milestoneStats: {} };
+        return { assigneeStats: {}, authorStats: {}, milestoneStats: {}, totalIssues: 0 };
       }
       
       if (data[0]?.errors) {
         console.error('❌ GraphQL errors in Issues Statistics API response:', data[0].errors);
-        return { assigneeStats: {}, authorStats: {}, milestoneStats: {} };
+        return { assigneeStats: {}, authorStats: {}, milestoneStats: {}, totalIssues: 0 };
       }
       
       if (data[0]?.data?.project?.issues?.nodes) {
@@ -1008,16 +1008,17 @@ class GitLabUtils {
         console.log('  Assignee stats:', assigneeStats);
         console.log('  Author stats:', authorStats);
         console.log('  Milestone stats:', milestoneStats);
+        console.log('  Total issues:', issues.length);
         
-        return { assigneeStats, authorStats, milestoneStats };
+        return { assigneeStats, authorStats, milestoneStats, totalIssues: issues.length };
       } else {
         console.warn('❌ No issues data found in statistics API response structure');
-        return { assigneeStats: {}, authorStats: {}, milestoneStats: {} };
+        return { assigneeStats: {}, authorStats: {}, milestoneStats: {}, totalIssues: 0 };
       }
 
     } catch (error) {
       console.error('❌ Error fetching issues statistics:', error);
-      return { assigneeStats: {}, authorStats: {}, milestoneStats: {} };
+      return { assigneeStats: {}, authorStats: {}, milestoneStats: {}, totalIssues: 0 };
     }
   }
 
