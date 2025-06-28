@@ -369,13 +369,6 @@
   margin-left: 4px;
 }
 
-/* 标签组的特殊布局 */
-.filter-group[data-group-id="label"] .filter-item .item-name {
-  flex: none; /* 不要拉伸，让宽度适应内容 */
-  overflow: visible; /* 允许显示完整内容 */
-  text-overflow: unset; /* 不使用省略号 */
-}
-
 /* 单选组样式 */
 .filter-group[data-group-id="general"] .filter-item {
   border-radius: 6px;
@@ -391,8 +384,7 @@
 /* 多选组样式增强 */
 .filter-group[data-group-id="assignee"] .filter-item,
 .filter-group[data-group-id="author"] .filter-item,
-.filter-group[data-group-id="milestone"] .filter-item,
-.filter-group[data-group-id="label"] .filter-item {
+.filter-group[data-group-id="milestone"] .filter-item {
   border-radius: 4px;
 }
 
@@ -424,60 +416,6 @@
 .filter-group[data-group-id="author"] .filter-item:active {
   transform: scale(0.98);
   transition: transform 0.1s ease;
-}
-
-/* 标签特殊样式 */
-.filter-group[data-group-id="label"] .filter-item .item-name {
-  padding: 3px 8px;
-  border-radius: 12px; /* 统一使用圆角 */
-  font-size: 11px;
-  background: #f3f4f6;
-  color: #374151;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  max-width: fit-content;
-  line-height: 1.2;
-}
-
-/* 有颜色的标签样式 */
-.filter-group[data-group-id="label"] .filter-item .item-name.label-styled {
-  font-weight: 500;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  margin: 2px 0;
-  min-height: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px; /* 两边圆角，类似胶囊形状 */
-  padding: 3px 8px; /* 减少左右内边距 */
-  font-size: 11px; /* 稍微小一点的字体 */
-  line-height: 1.2;
-  white-space: nowrap; /* 防止文字换行 */
-  max-width: fit-content; /* 宽度适应内容 */
-}
-
-/* 标签悬停效果 */
-.filter-group[data-group-id="label"] .filter-item:hover .item-name.label-styled {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  transform: translateY(-1px) scale(1.02); /* 轻微放大效果 */
-}
-
-/* 激活状态的标签 */
-.filter-group[data-group-id="label"] .filter-item.active .item-name {
-  background: #1e40af;
-  color: white;
-  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.3);
-}
-
-/* 激活状态的有颜色标签保持原色，但添加边框强调 */
-.filter-group[data-group-id="label"] .filter-item.active .item-name.label-styled {
-  border: 2px solid #1e40af;
-  box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.2), 0 2px 6px rgba(0, 0, 0, 0.15);
-  transform: scale(1.05); /* 激活时稍微放大 */
 }
 
 /* 空状态 */

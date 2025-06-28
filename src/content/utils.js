@@ -191,29 +191,6 @@ class GitLabUtils {
     }
   }
 
-  // 从页面提取标签信息
-  static async extractLabelsFromPage() {
-    try {
-      const labels = new Set();
-      
-      // 从issue卡片中提取标签信息
-      const labelElements = document.querySelectorAll('.label, [data-testid="label"]');
-      labelElements.forEach(el => {
-        const name = el.textContent.trim();
-        const color = el.style.backgroundColor || el.getAttribute('data-color');
-        if (name) {
-          labels.add({ name, color });
-        }
-      });
-      
-      return Array.from(labels);
-      
-    } catch (error) {
-      console.error('❌ Error extracting labels from page:', error);
-      return [];
-    }
-  }
-
   // 获取搜索输入框
   static getSearchInput() {
     // 尝试多种选择器来找到搜索输入框
@@ -347,7 +324,6 @@ class GitLabUtils {
       'author_username',
       'author_id',
       'milestone_title',
-      'label_name',
       'search',
       'state',
       'scope',
@@ -576,102 +552,6 @@ class GitLabUtils {
       console.error('❌ Error fetching milestones from API:', error);
       // 如果 API 调用失败，回退到页面提取方法
       return this.extractMilestonesFromPage();
-    }
-  }
-
-  // 通过 GraphQL API 获取标签列表
-  static async fetchLabelsFromAPI() {
-    try {
-      const projectId = this.extractProjectId();
-      if (!projectId) {
-        console.warn('❌ Could not extract project ID');
-        return [];
-      }
-
-      const csrfToken = this.getCSRFToken();
-      if (!csrfToken) {
-        console.warn('❌ Could not get CSRF token');
-        return [];
-      }
-
-      // 构建 GraphQL 请求
-      const query = {
-        operationName: "searchLabels",
-        variables: {
-          isProject: true,
-          fullPath: projectId,
-          search: ""
-        },
-        query: `query searchLabels($fullPath: ID!, $search: String, $isProject: Boolean = false) {
-          group(fullPath: $fullPath) @skip(if: $isProject) {
-            id
-            labels(
-              searchTerm: $search
-              includeAncestorGroups: true
-              includeDescendantGroups: true
-            ) {
-              nodes {
-                ...Label
-              }
-            }
-            __typename
-          }
-          project(fullPath: $fullPath) @include(if: $isProject) {
-            id
-            labels(searchTerm: $search, includeAncestorGroups: true) {
-              nodes {
-                ...Label
-              }
-            }
-            __typename
-          }
-        }
-
-        fragment Label on Label {
-          id
-          color
-          textColor
-          title
-          __typename
-        }`
-      };
-
-      // 发送 GraphQL 请求
-      const response = await fetch(`${window.location.origin}/api/graphql`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
-        },
-        body: JSON.stringify([query])
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data[0]?.data?.project?.labels?.nodes) {
-        const labels = data[0].data.project.labels.nodes.map(node => ({
-          id: node.id,
-          title: node.title,
-          color: node.color,
-          textColor: node.textColor,
-          name: node.title // 为了兼容现有代码，添加 name 属性
-        }));
-
-        console.log(`✅ Fetched ${labels.length} labels from API:`, labels);
-        return labels;
-      } else {
-        console.warn('❌ No labels data found in API response');
-        return [];
-      }
-
-    } catch (error) {
-      console.error('❌ Error fetching labels from API:', error);
-      // 如果 API 调用失败，回退到页面提取方法
-      return this.extractLabelsFromPage();
     }
   }
 
