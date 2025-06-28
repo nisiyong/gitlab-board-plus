@@ -1,0 +1,90 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Commit Convention Rules
+
+This repository follows the Conventional Commits specification for all commit messages. All commit messages MUST be written in English.
+
+## Commit Message Format
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+## Types
+
+- **feat**: A new feature
+- **fix**: A bug fix
+- **docs**: Documentation only changes
+- **style**: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+- **refactor**: A code change that neither fixes a bug nor adds a feature
+- **perf**: A code change that improves performance
+- **test**: Adding missing tests or correcting existing tests
+- **build**: Changes that affect the build system or external dependencies
+- **ci**: Changes to our CI configuration files and scripts
+- **chore**: Other changes that don't modify src or test files
+- **revert**: Reverts a previous commit
+
+## Rules
+
+1. **Language**: All commit messages MUST be in English
+2. **Type**: Use one of the predefined types listed above
+3. **Scope**: Optional, but should be meaningful (e.g., `feat(popup): add new filter option`)
+4. **Description**: 
+   - Use imperative mood ("add" not "added" or "adds")
+   - Start with lowercase letter
+   - No period at the end
+   - Maximum 72 characters
+5. **Body**: Optional, use when more explanation is needed
+6. **Footer**: Optional, use for breaking changes or issue references
+
+## Examples
+
+### Good Examples
+```
+feat: add dark mode support
+fix(filters): resolve issue with date filtering
+docs: update installation instructions
+style: format code according to prettier rules
+refactor(board): simplify card rendering logic
+perf: optimize API calls for better performance
+test: add unit tests for filter functionality
+build: update webpack configuration
+ci: add automated testing workflow
+chore: update dependencies
+```
+
+### Bad Examples
+```
+❌ 添加了新功能 (Chinese language)
+❌ Fixed bug (capitalized, past tense)
+❌ add new feature. (period at end)
+❌ Add New Feature (title case)
+❌ very long commit message that exceeds the recommended character limit and becomes hard to read
+```
+
+## Breaking Changes
+
+For breaking changes, add `BREAKING CHANGE:` in the footer or add `!` after the type:
+
+```
+feat!: remove deprecated API endpoints
+
+BREAKING CHANGE: The old API endpoints have been removed. Use the new v2 endpoints instead.
+```
+
+## Issue References
+
+Reference issues in the footer:
+
+```
+fix: resolve memory leak in background script
+
+Closes #123
+```
