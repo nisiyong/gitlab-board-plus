@@ -4,6 +4,18 @@
 
 一个增强 GitLab Board 管理功能的 Chrome 插件，让项目管理更高效。
 
+## 为什么会有这个项目？
+
+GitLab Board Plus 是一个为小团队设计的轻量级项目管理插件。
+
+在许多公司中，GitLab（特别是开源版本）被广泛用作内部代码托管平台，但其项目管理功能相对基础。对于技术人员来说，虽然 GitLab 的 Issue 本身已足够强大，但在任务逐渐增多的情况下，缺少像 GitHub Projects 那样直观、灵活的看板体验。
+
+我希望通过一个小插件，提供一些实用的增强功能，帮助团队更方便地过滤 Issue、查看任务状态，从而提升协作效率。它并没有 Github Project 那么强大复杂，只是一个简单的扩展工具，补足一些日常使用中的小痛点。
+
+这是一个 Vibe Coding 项目，我并不擅长开发 Chrome 插件，但在 AI 的帮助下，我得以快速上手，把一个点子变成了实际可用的工具。这次创作也让我重新认识了个人开发者在 AI 时代的创造力边界。
+
+希望这个小工具对你也有所启发 🙂
+
 ## ✨ 主要功能
 
 - **🎯 智能过滤**: 按人员、标签、里程碑等快速过滤 Issues
@@ -18,7 +30,7 @@
 
 ```bash
 # 下载源码
-git clone https://github.com/your-username/gitlab-board-plus.git
+git clone https://github.com/nisiyong/gitlab-board-plus.git
 ```
 
 ### 2. 加载到 Chrome

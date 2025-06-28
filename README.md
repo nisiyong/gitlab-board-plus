@@ -4,6 +4,18 @@ English | [中文](README.zh-CN.md)
 
 A Chrome extension that enhances GitLab Board management functionality for more efficient project management.
 
+## Why This Exists
+
+GitLab Board Plus is a lightweight project management extension designed for small teams.
+
+In many companies, GitLab (especially the open-source version) is widely used as an internal code hosting platform, but its project management features are relatively basic. For technical teams, while GitLab's Issues are powerful enough on their own, as tasks gradually increase, there's a lack of intuitive and flexible board experience like GitHub Projects.
+
+I wanted to provide some practical enhancement features through a small extension to help teams filter Issues more conveniently and view task status, thereby improving collaboration efficiency. It's not as powerful and complex as GitHub Projects, just a simple extension tool to address some daily pain points.
+
+This is a Vibe Coding project. I'm not skilled at developing Chrome extensions, but with AI's help, I was able to quickly get started and turn an idea into a practical tool. This creative process also made me re-recognize the creative boundaries of individual developers in the AI era.
+
+I hope this little tool can also inspire you 🙂
+
 ## ✨ Key Features
 
 - **🎯 Smart Filtering**: Quickly filter Issues by assignee, labels, milestones, etc.
@@ -18,7 +30,7 @@ A Chrome extension that enhances GitLab Board management functionality for more 
 
 ```bash
 # Download source code
-git clone https://github.com/your-username/gitlab-board-plus.git
+git clone https://github.com/nisiyong/gitlab-board-plus.git
 ```
 
 ### 2. Load into Chrome

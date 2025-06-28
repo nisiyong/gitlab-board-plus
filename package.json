@@ -1,7 +1,7 @@
 {
   "name": "gitlab-board-plus",
   "version": "1.0.0",
-  "description": "增强 GitLab Board 管理功能的 Chrome 插件",
+  "description": "Chrome extension to enhance GitLab Board management features",
   "scripts": {
     "build": "echo 'Building extension...'",
     "dev": "echo 'Development mode...'",
