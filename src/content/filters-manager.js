@@ -598,15 +598,23 @@ class FiltersShortcutsManager {
 
   // 通过URL参数应用过滤器
   applyFiltersViaUrl() {
+    // 创建一个URL对象，用于累积所有过滤器参数
+    const url = new URL(window.location.href);
+    
+    // 首先清除现有的过滤参数
+    GitLabUtils.clearFilterParams(url);
+    
     // 根据激活的过滤器设置URL参数
     let filterCount = 0;
     this.activeFilters.forEach(filter => {
       filterCount++;
-      this.addFilterToUrl(new URL(window.location.href), filter);
+      this.addFilterToUrl(url, filter); // 使用同一个url对象
     });
     
+    console.log('🔄 Applying filters to URL:', url.toString());
+    
     // 重新加载页面
-    window.location.href = new URL(window.location.href).toString();
+    window.location.href = url.toString();
   }
 
   // 将单个过滤器添加到URL
