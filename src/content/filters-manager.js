@@ -569,21 +569,19 @@ class FiltersShortcutsManager {
   // 处理单选过滤器（指派人、创建人、里程碑）
   handleSingleSelectFilter(item, filter, groupType) {
     const input = item.querySelector('input[type="radio"], input[type="checkbox"]');
-    
+
+    // 如果已经是激活状态，则不执行任何操作
     if (item.classList.contains('active')) {
-      // 取消激活
-      item.classList.remove('active');
-      if (input) input.checked = false;
-      this.activeFilters.delete(filter);
-    } else {
-      // 先清除同组的其他激活项
-      this.clearGroupActiveItems(groupType);
-      
-      // 激活当前项
-      item.classList.add('active');
-      if (input) input.checked = true;
-      this.activeFilters.add(filter);
+      return;
     }
+
+    // 先清除同组的其他激活项
+    this.clearGroupActiveItems(groupType);
+
+    // 激活当前项
+    item.classList.add('active');
+    if (input) input.checked = true;
+    this.activeFilters.add(filter);
   }
 
   // 清除指定组的所有激活项
