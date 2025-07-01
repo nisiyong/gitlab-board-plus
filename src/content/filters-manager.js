@@ -183,10 +183,18 @@ class FiltersShortcutsManager {
           });
         }
         
-        // 添加其他指派人（除了"我"）
+        // 添加其他指派人（除了"我"），按issue数量降序排序
         if (users.length > 0) {
           const assignees = users.filter(user => user.isAssignee && user.username !== this.currentUser?.username);
-          assignees.forEach(user => {
+          
+          // 按issue数量降序排序
+          const sortedAssignees = assignees.sort((a, b) => {
+            const countA = assigneeStats[a.username] || 0;
+            const countB = assigneeStats[b.username] || 0;
+            return countB - countA; // 降序排序
+          });
+          
+          sortedAssignees.forEach(user => {
             const count = assigneeStats[user.username] || 0;
             assigneeItems.push({
               id: `assignee-${user.username}`,
