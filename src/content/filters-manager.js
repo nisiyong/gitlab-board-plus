@@ -633,6 +633,13 @@ class FiltersShortcutsManager {
       if (token) filterTokens.push(token);
     });
 
+    // If there are no tokens to apply, it means we are clearing the last filter.
+    // In this case, call the master reset function which is known to work correctly.
+    if (filterTokens.length === 0) {
+      this.resetFiltersViaVue();
+      return;
+    }
+
     vueInstance.filterValue = filterTokens;
     vueInstance.$mount().handleFilterSubmit();
 
@@ -836,7 +843,8 @@ class FiltersShortcutsManager {
     const componentElement = document.querySelector('.vue-filtered-search-bar-container');
     if (componentElement && componentElement.__vue__) {
       const vueInstance = componentElement.__vue__;
-      vueInstance.filterValue = [];
+      // Use splice to clear the array, which is more robust for Vue's reactivity
+      vueInstance.filterValue.splice(0, vueInstance.filterValue.length);
       vueInstance.$mount().handleFilterSubmit();
     }
 
