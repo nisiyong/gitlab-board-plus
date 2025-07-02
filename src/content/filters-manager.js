@@ -562,28 +562,26 @@ class FiltersShortcutsManager {
     // 对于指派人、创建人和里程碑组，使用单选模式
     this.handleSingleSelectFilter(item, filter, groupType);
     
-    // 应用过滤器 - 通过URL参数
-    this.applyFiltersViaUrl();
+    // 应用过滤器 - 通过Vue实例
+    this.applyFiltersViaVue();
   }
 
   // 处理单选过滤器（指派人、创建人、里程碑）
   handleSingleSelectFilter(item, filter, groupType) {
     const input = item.querySelector('input[type="radio"], input[type="checkbox"]');
-    
+
+    // 如果已经是激活状态，则不执行任何操作
     if (item.classList.contains('active')) {
-      // 取消激活
-      item.classList.remove('active');
-      if (input) input.checked = false;
-      this.activeFilters.delete(filter);
-    } else {
-      // 先清除同组的其他激活项
-      this.clearGroupActiveItems(groupType);
-      
-      // 激活当前项
-      item.classList.add('active');
-      if (input) input.checked = true;
-      this.activeFilters.add(filter);
+      return;
     }
+
+    // 先清除同组的其他激活项
+    this.clearGroupActiveItems(groupType);
+
+    // 激活当前项
+    item.classList.add('active');
+    if (input) input.checked = true;
+    this.activeFilters.add(filter);
   }
 
   // 清除指定组的所有激活项
@@ -602,6 +600,54 @@ class FiltersShortcutsManager {
       // 从激活过滤器集合中移除
       this.activeFilters.delete(groupFilter);
     });
+  }
+
+  // 通过URL参数应用过滤器
+  applyFiltersViaVue() {
+    const componentElement = document.querySelector('.vue-filtered-search-bar-container');
+    if (!componentElement || !componentElement.__vue__) {
+      console.error('Vue instance not found. Falling back to URL-based filtering.');
+      this.applyFiltersViaUrl();
+      return;
+    }
+
+    const vueInstance = componentElement.__vue__;
+    const filterTokens = [];
+
+    this.activeFilters.forEach(filter => {
+      const [type, value] = filter.split(':');
+      if (value === 'All') return;
+
+      let token;
+      switch (type) {
+        case 'assignee':
+          token = { type: 'assignee', value: { data: value === 'None' ? value : value.replace('@', ''), operator: '=' } };
+          break;
+        case 'author':
+          token = { type: 'author', value: { data: value.replace('@', ''), operator: '=' } };
+          break;
+        case 'milestone_title':
+          token = { type: 'milestone', value: { data: value, operator: '=' } };
+          break;
+      }
+      if (token) filterTokens.push(token);
+    });
+
+    // If there are no tokens to apply, it means we are clearing the last filter.
+    // In this case, call the master reset function which is known to work correctly.
+    if (filterTokens.length === 0) {
+      this.resetFiltersViaVue();
+      return;
+    }
+
+    vueInstance.filterValue = filterTokens;
+    vueInstance.$mount().handleFilterSubmit();
+
+    // Update URL for persistence
+    const url = new URL(window.location.href);
+    GitLabUtils.clearFilterParams(url);
+    this.activeFilters.forEach(filter => this.addFilterToUrl(url, filter));
+    window.history.pushState({}, '', url.toString());
   }
 
   // 通过URL参数应用过滤器
@@ -668,7 +714,7 @@ class FiltersShortcutsManager {
   // 应用当前过滤器（保留原方法作为备用）
   applyCurrentFilters() {
     const filterQuery = Array.from(this.activeFilters).join(' ');
-    this.applyFiltersViaUrl();
+    this.applyFiltersViaVue();
   }
 
   // 根据URL设置激活状态
@@ -790,7 +836,23 @@ class FiltersShortcutsManager {
     }
     
     // 通过清除URL参数来重置过滤器
-    this.resetFiltersViaUrl();
+    this.resetFiltersViaVue();
+  }
+
+  resetFiltersViaVue() {
+    const componentElement = document.querySelector('.vue-filtered-search-bar-container');
+    if (componentElement && componentElement.__vue__) {
+      const vueInstance = componentElement.__vue__;
+      // Use splice to clear the array, which is more robust for Vue's reactivity
+      vueInstance.filterValue.splice(0, vueInstance.filterValue.length);
+      vueInstance.$mount().handleFilterSubmit();
+    }
+
+    // Update URL for persistence
+    const url = new URL(window.location.href);
+    GitLabUtils.clearFilterParams(url);
+    window.history.pushState({}, '', url.toString());
+    this.setActiveFiltersFromUrl();
   }
 
   // 通过URL参数重置过滤器
